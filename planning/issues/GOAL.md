@@ -2,7 +2,7 @@
 
 <!-- kourindou-plan:GOAL -->
 
-**已创建[主Issue #1](https://github.com/sagitrs/ps-mod-kourindou/issues/1)。** 本文件保留规划正文，远端状态以主Issue为准。子项仍为草稿，未派工、未执行产品验收。
+**已创建主票[Issue #1](https://github.com/sagitrs/ps-mod-kourindou/issues/1)。** 本文件保留规划正文，远端进展以Issue为准。V1及其12张开发子票已建立原生层级；F-01/F-02/F-03仍为草稿。未派工、未执行产品验收。
 
 规划ID：`GOAL`
 

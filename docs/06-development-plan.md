@@ -2,7 +2,9 @@
 
 [产品设计](01-product-design.md) · [决策](03-decisions.md) · [Issue目录](../planning/README.md)
 
-计划规定顺序与交付条件，不承诺尚无依据的工时/日期。当前没有排班、自动派工或实施授权扩大；后续实施按用户选择的目标仓和审阅规则进行。
+计划规定顺序与交付条件，不承诺尚无依据的工时/日期。当前没有排班、自动派工或实施授权扩大；后续实施按本仓有效审阅规则进行。
+
+已建立原生层级：[主票 #1](https://github.com/sagitrs/ps-mod-kourindou/issues/1) → [V1总票 #3](https://github.com/sagitrs/ps-mod-kourindou/issues/3) → V1-01至V1-12（#4—#15）。编号和依赖见[规划目录](../planning/README.md)；F三项仍未开票。设计PR合入、开票、开始实现及产品验收是不同状态。
 
 ## 1. 分阶段交付
 

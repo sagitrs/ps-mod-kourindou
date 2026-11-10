@@ -43,8 +43,8 @@ class DocumentChecks(unittest.TestCase):
     def test_valid_fixture(self):
         result = self.run_check(0)
         self.assertEqual(result["counts"]["planned_issues"], 17)
-        self.assertEqual(result["counts"]["mapped_main_issues"], 1)
-        self.assertEqual(result["counts"]["unpublished_drafts"], 16)
+        self.assertEqual(result["counts"]["mapped_issues"], 14)
+        self.assertEqual(result["counts"]["unpublished_drafts"], 3)
 
     def test_default_root_from_other_directory(self):
         self.run_check(0, default=True)
@@ -110,8 +110,38 @@ class DocumentChecks(unittest.TestCase):
         self.run_check(1)
 
     def test_unpublished_task_cannot_claim_remote_issue(self):
-        self.update_index(lambda d: d["issues"][1].update(remote_issue={"number":2,"url":"https://github.com/sagitrs/ps-mod-kourindou/issues/2"}))
-        self.run_check(1)
+        self.update_index(lambda d: next(x for x in d["issues"] if x["id"] == "F-01").update(
+            remote_issue={"number":999,"url":"https://github.com/sagitrs/ps-mod-kourindou/issues/999"}))
+        self.assertIn("unpublished task has remote mapping: F-01", self.run_check(1)["errors"])
+
+    def test_missing_published_issue(self):
+        self.update_index(lambda d: d["issues"][1].update(remote_issue=None))
+        self.assertIn("invalid issue mapping: V1", self.run_check(1)["errors"])
+
+    def test_duplicate_remote_numbers(self):
+        self.update_index(lambda d: d["issues"][1].update(remote_issue=dict(d["issues"][0]["remote_issue"])))
+        self.assertIn("duplicate remote issue number", self.run_check(1)["errors"])
+
+    def test_wrong_remote_url(self):
+        self.update_index(lambda d: d["issues"][1]["remote_issue"].update(url="https://github.com/other/repo/issues/3"))
+        self.assertIn("invalid issue mapping: V1", self.run_check(1)["errors"])
+
+    def test_wrong_publication_scope(self):
+        self.update_index(lambda d: d.update(publication_status="main-issue-only"))
+        self.assertIn("publication scope mismatch", self.run_check(1)["errors"])
+
+    def test_missing_body_mapping(self):
+        path = self.root / "planning/issues/V1.md"
+        path.write_text(path.read_text().replace("[Issue #3](", "[unmapped](", 1))
+        self.assertIn("body issue mapping missing: V1", self.run_check(1)["errors"])
+
+    def test_boolean_child_issue_number(self):
+        self.update_index(lambda d: d["issues"][1]["remote_issue"].update(number=True))
+        self.assertIn("invalid issue mapping: V1", self.run_check(1)["errors"])
+
+    def test_nonpositive_child_issue_number(self):
+        self.update_index(lambda d: d["issues"][1]["remote_issue"].update(number=0))
+        self.assertIn("invalid issue mapping: V1", self.run_check(1)["errors"])
 
     def test_wrong_main_issue(self):
         self.update_index(lambda d: d["issues"][0]["remote_issue"].update(number=999))

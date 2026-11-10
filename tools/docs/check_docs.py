@@ -9,6 +9,7 @@ import re
 EXPECTED_IDS = {"GOAL", "V1", "F-01", "F-02", "F-03"} | {
     f"V1-{i:02}" for i in range(1, 13)
 }
+PUBLISHED_IDS = EXPECTED_IDS - {"F-01", "F-02", "F-03"}
 REPOSITORY = "sagitrs/ps-mod-kourindou"
 MAIN_ISSUE = {"number": 1, "url": f"https://github.com/{REPOSITORY}/issues/1"}
 
@@ -82,9 +83,9 @@ def check(root):
     if owned_file(index_path).stat().st_size > 1024 * 1024:
         raise ValueError("issue index exceeds 1 MiB")
     index = json.loads(read(index_path), object_pairs_hook=no_duplicate_keys, parse_constant=nonfinite)
-    require(index["schema_version"] == 2 and index["kind"] == "issue-plan", "unsupported index schema")
+    require(index["schema_version"] == 3 and index["kind"] == "issue-plan", "unsupported index schema")
     require(index["remote_repository"] == REPOSITORY, "repository mismatch")
-    require(index["publication_status"] == "main-issue-only", "publication scope mismatch")
+    require(index["publication_status"] == "v1-issues-created", "publication scope mismatch")
     entries = index["issues"]
     if not isinstance(entries, list) or not all(isinstance(x, dict) for x in entries):
         raise ValueError("issues must be a list of objects")
@@ -102,15 +103,26 @@ def check(root):
     require(acceptance == {f"AC{i:02}" for i in range(1, 21)}, "acceptance table incomplete")
     require(decisions == {f"D{i:02}" for i in range(1, 14)}, "decision table incomplete")
     remote_count = 0
+    remote_numbers = []
     for entry in entries:
         id = entry["id"]
         parent = None if id == "GOAL" else ("V1" if id.startswith("V1-") else "GOAL")
         require(entry["parent"] == parent, f"wrong parent: {id}")
         remote = entry["remote_issue"]
-        if id == "GOAL":
-            require(isinstance(remote, dict) and type(remote.get("number")) is int and remote == MAIN_ISSUE, "main issue mapping mismatch")
+        valid_remote = False
+        if id in PUBLISHED_IDS:
+            valid_remote = (
+                isinstance(remote, dict) and set(remote) == {"number", "url"}
+                and type(remote["number"]) is int and remote["number"] > 0
+                and remote["url"] == f"https://github.com/{REPOSITORY}/issues/{remote['number']}"
+            )
+            require(valid_remote, f"invalid issue mapping: {id}")
+            if valid_remote:
+                remote_numbers.append(remote["number"])
         else:
             require(remote is None, f"unpublished task has remote mapping: {id}")
+        if id == "GOAL":
+            require(valid_remote and remote == MAIN_ISSUE, "main issue mapping mismatch")
         remote_count += remote is not None
         for key, allowed in (("requirements", requirements), ("acceptance", acceptance), ("decisions", decisions)):
             require(set(entry[key]) <= allowed, f"unknown {key}: {id}")
@@ -121,10 +133,13 @@ def check(root):
         body = read(root / "planning/issues" / f"{id}.md")
         require(body.startswith("# " + entry["title"] + "\n"), f"title mismatch: {id}")
         require(body.count(f"<!-- kourindou-plan:{id} -->") == 1, f"marker mismatch: {id}")
+        if valid_remote:
+            require(f"[Issue #{remote['number']}]({remote['url']})" in body, f"body issue mapping missing: {id}")
         require("- [ ] " in body and "- [x]" not in body.lower(), f"acceptance is missing/already checked: {id}")
         for ref in ([parent] if parent else []) + entry["depends_on"]:
             require(f"[{ref}]({ref}.md)" in body, f"body relation missing: {id} -> {ref}")
-    require(remote_count == 1, "only the main issue may be mapped")
+    require(remote_count == len(PUBLISHED_IDS), "published issue count mismatch")
+    require(len(remote_numbers) == len(set(remote_numbers)), "duplicate remote issue number")
 
     for graph in ("parent", "depends_on"):
         active, finished = set(), set()
@@ -155,7 +170,7 @@ def check(root):
         "counts": {
             "markdown_files": len(markdown), "local_links": local_links,
             "external_links_not_fetched": external_links, "planned_issues": len(entries),
-            "mapped_main_issues": remote_count, "unpublished_drafts": len(entries) - remote_count,
+            "mapped_issues": remote_count, "unpublished_drafts": len(entries) - remote_count,
             "v1_tasks": len(leaves), "requirements": len(requirements),
             "product_acceptance_cases_not_run": len(acceptance), "decision_entries": len(decisions),
         },
