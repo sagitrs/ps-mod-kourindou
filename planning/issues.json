@@ -1,0 +1,553 @@
+{
+  "schema_version": 2,
+  "kind": "issue-plan",
+  "remote_repository": "sagitrs/ps-mod-kourindou",
+  "publication_status": "main-issue-only",
+  "count": 17,
+  "issues": [
+    {
+      "id": "GOAL",
+      "title": "[requirement][umbrella] 香霖堂Mod总目标与V1三角色开发计划",
+      "parent": null,
+      "depends_on": [],
+      "requirements": [],
+      "acceptance": [],
+      "decisions": [],
+      "stage": "tracking",
+      "suggested_labels": [
+        "requirement",
+        "umbrella"
+      ],
+      "body_file": "issues/GOAL.md",
+      "remote_issue": {
+        "number": 1,
+        "url": "https://github.com/sagitrs/ps-mod-kourindou/issues/1"
+      }
+    },
+    {
+      "id": "V1",
+      "title": "[requirement][umbrella] V1：三角色香霖堂经营与好感养成完整交付",
+      "parent": "GOAL",
+      "depends_on": [],
+      "requirements": [
+        "R01",
+        "R02",
+        "R03",
+        "R04",
+        "R05",
+        "R06",
+        "R07",
+        "R08",
+        "R09",
+        "R10"
+      ],
+      "acceptance": [
+        "AC01",
+        "AC02",
+        "AC03",
+        "AC04",
+        "AC05",
+        "AC06",
+        "AC07",
+        "AC08",
+        "AC09",
+        "AC10",
+        "AC11",
+        "AC12",
+        "AC13",
+        "AC14",
+        "AC15",
+        "AC16",
+        "AC17",
+        "AC18",
+        "AC19",
+        "AC20"
+      ],
+      "decisions": [
+        "D01",
+        "D02",
+        "D03",
+        "D04",
+        "D05",
+        "D06",
+        "D07",
+        "D08",
+        "D09",
+        "D10",
+        "D11",
+        "D12",
+        "D13"
+      ],
+      "stage": "tracking",
+      "suggested_labels": [
+        "requirement",
+        "umbrella"
+      ],
+      "body_file": "issues/V1.md",
+      "remote_issue": null
+    },
+    {
+      "id": "V1-01",
+      "title": "[requirement][V1-01] 固定首版设计边界与决策记录",
+      "parent": "V1",
+      "depends_on": [],
+      "requirements": [
+        "R01",
+        "R02",
+        "R03",
+        "R04",
+        "R05",
+        "R06",
+        "R07",
+        "R08",
+        "R09",
+        "R10"
+      ],
+      "acceptance": [],
+      "decisions": [
+        "D01",
+        "D02",
+        "D03",
+        "D04",
+        "D05",
+        "D06",
+        "D07",
+        "D08",
+        "D09",
+        "D10",
+        "D11",
+        "D12",
+        "D13"
+      ],
+      "stage": "v1-planned",
+      "suggested_labels": [
+        "requirement"
+      ],
+      "body_file": "issues/V1-01.md",
+      "remote_issue": null
+    },
+    {
+      "id": "V1-02",
+      "title": "[requirement][V1-02] 锁定游戏版本并验证高风险适配原型",
+      "parent": "V1",
+      "depends_on": [
+        "V1-01"
+      ],
+      "requirements": [
+        "R02",
+        "R03",
+        "R06",
+        "R08",
+        "R09",
+        "R10"
+      ],
+      "acceptance": [
+        "AC01",
+        "AC02",
+        "AC03",
+        "AC06",
+        "AC10",
+        "AC12",
+        "AC16",
+        "AC18",
+        "AC20"
+      ],
+      "decisions": [
+        "D10",
+        "D13"
+      ],
+      "stage": "v1-planned",
+      "suggested_labels": [
+        "requirement"
+      ],
+      "body_file": "issues/V1-02.md",
+      "remote_issue": null
+    },
+    {
+      "id": "V1-03",
+      "title": "[requirement][V1-03] 建立工程、按局状态与生命周期基础",
+      "parent": "V1",
+      "depends_on": [
+        "V1-02"
+      ],
+      "requirements": [
+        "R09",
+        "R10"
+      ],
+      "acceptance": [
+        "AC01",
+        "AC03",
+        "AC15",
+        "AC16",
+        "AC18",
+        "AC20"
+      ],
+      "decisions": [
+        "D09",
+        "D10",
+        "D11"
+      ],
+      "stage": "v1-planned",
+      "suggested_labels": [
+        "requirement"
+      ],
+      "body_file": "issues/V1-03.md",
+      "remote_issue": null
+    },
+    {
+      "id": "V1-04",
+      "title": "[requirement][V1-04] 新增爱丽丝、魔理沙、咲夜及霖之助店铺设定",
+      "parent": "V1",
+      "depends_on": [
+        "V1-03"
+      ],
+      "requirements": [
+        "R01",
+        "R02",
+        "R09"
+      ],
+      "acceptance": [
+        "AC02",
+        "AC03",
+        "AC04",
+        "AC14",
+        "AC18"
+      ],
+      "decisions": [
+        "D01",
+        "D09"
+      ],
+      "stage": "v1-planned",
+      "suggested_labels": [
+        "requirement"
+      ],
+      "body_file": "issues/V1-04.md",
+      "remote_issue": null
+    },
+    {
+      "id": "V1-05",
+      "title": "[requirement][V1-05] 实现独立好感、进度条与买店上限解锁",
+      "parent": "V1",
+      "depends_on": [
+        "V1-04"
+      ],
+      "requirements": [
+        "R04",
+        "R06",
+        "R09"
+      ],
+      "acceptance": [
+        "AC05",
+        "AC06",
+        "AC15"
+      ],
+      "decisions": [
+        "D02",
+        "D07",
+        "D09"
+      ],
+      "stage": "v1-planned",
+      "suggested_labels": [
+        "requirement"
+      ],
+      "body_file": "issues/V1-05.md",
+      "remote_issue": null
+    },
+    {
+      "id": "V1-06",
+      "title": "[requirement][V1-06] 实现地区搬迁背景与实际客流加权",
+      "parent": "V1",
+      "depends_on": [
+        "V1-04"
+      ],
+      "requirements": [
+        "R03",
+        "R09"
+      ],
+      "acceptance": [
+        "AC10",
+        "AC11",
+        "AC14",
+        "AC15"
+      ],
+      "decisions": [
+        "D01",
+        "D04",
+        "D05"
+      ],
+      "stage": "v1-planned",
+      "suggested_labels": [
+        "requirement"
+      ],
+      "body_file": "issues/V1-06.md",
+      "remote_issue": null
+    },
+    {
+      "id": "V1-07",
+      "title": "[requirement][V1-07] 实现三人的夜间付费帮助",
+      "parent": "V1",
+      "depends_on": [
+        "V1-05"
+      ],
+      "requirements": [
+        "R05",
+        "R09"
+      ],
+      "acceptance": [
+        "AC07",
+        "AC08",
+        "AC14",
+        "AC15"
+      ],
+      "decisions": [
+        "D03"
+      ],
+      "stage": "v1-planned",
+      "suggested_labels": [
+        "requirement"
+      ],
+      "body_file": "issues/V1-07.md",
+      "remote_issue": null
+    },
+    {
+      "id": "V1-08",
+      "title": "[requirement][V1-08] 实现每日买家、每日卖家与自然模式",
+      "parent": "V1",
+      "depends_on": [
+        "V1-05",
+        "V1-06"
+      ],
+      "requirements": [
+        "R03",
+        "R08",
+        "R09"
+      ],
+      "acceptance": [
+        "AC11",
+        "AC12",
+        "AC13",
+        "AC15"
+      ],
+      "decisions": [
+        "D02",
+        "D06"
+      ],
+      "stage": "v1-planned",
+      "suggested_labels": [
+        "requirement"
+      ],
+      "body_file": "issues/V1-08.md",
+      "remote_issue": null
+    },
+    {
+      "id": "V1-09",
+      "title": "[requirement][V1-09] 实现150恋人CG与200结婚CG解锁流程",
+      "parent": "V1",
+      "depends_on": [
+        "V1-05"
+      ],
+      "requirements": [
+        "R07",
+        "R09"
+      ],
+      "acceptance": [
+        "AC09",
+        "AC14",
+        "AC15"
+      ],
+      "decisions": [
+        "D08"
+      ],
+      "stage": "v1-planned",
+      "suggested_labels": [
+        "requirement"
+      ],
+      "body_file": "issues/V1-09.md",
+      "remote_issue": null
+    },
+    {
+      "id": "V1-10",
+      "title": "[requirement][V1-10] 交付三人正式立绘、地区背景、CG与文本",
+      "parent": "V1",
+      "depends_on": [
+        "V1-01",
+        "V1-02"
+      ],
+      "requirements": [
+        "R01",
+        "R02",
+        "R03",
+        "R05",
+        "R07",
+        "R10"
+      ],
+      "acceptance": [
+        "AC14",
+        "AC17",
+        "AC20"
+      ],
+      "decisions": [
+        "D01",
+        "D03",
+        "D08",
+        "D12"
+      ],
+      "stage": "v1-planned",
+      "suggested_labels": [
+        "requirement"
+      ],
+      "body_file": "issues/V1-10.md",
+      "remote_issue": null
+    },
+    {
+      "id": "V1-11",
+      "title": "[requirement][V1-11] 完成三角色全流程集成与兼容性验收",
+      "parent": "V1",
+      "depends_on": [
+        "V1-06",
+        "V1-07",
+        "V1-08",
+        "V1-09",
+        "V1-10"
+      ],
+      "requirements": [
+        "R01",
+        "R02",
+        "R03",
+        "R04",
+        "R05",
+        "R06",
+        "R07",
+        "R08",
+        "R09",
+        "R10"
+      ],
+      "acceptance": [
+        "AC01",
+        "AC02",
+        "AC03",
+        "AC04",
+        "AC05",
+        "AC06",
+        "AC07",
+        "AC08",
+        "AC09",
+        "AC10",
+        "AC11",
+        "AC12",
+        "AC13",
+        "AC14",
+        "AC15",
+        "AC16",
+        "AC17",
+        "AC18",
+        "AC19",
+        "AC20"
+      ],
+      "decisions": [
+        "D01",
+        "D02",
+        "D03",
+        "D04",
+        "D05",
+        "D06",
+        "D07",
+        "D08",
+        "D09",
+        "D10",
+        "D11",
+        "D12",
+        "D13"
+      ],
+      "stage": "v1-planned",
+      "suggested_labels": [
+        "requirement"
+      ],
+      "body_file": "issues/V1-11.md",
+      "remote_issue": null
+    },
+    {
+      "id": "V1-12",
+      "title": "[requirement][V1-12] 制作首版候选包与安装维护交接",
+      "parent": "V1",
+      "depends_on": [
+        "V1-11"
+      ],
+      "requirements": [
+        "R09",
+        "R10"
+      ],
+      "acceptance": [
+        "AC16",
+        "AC17",
+        "AC18",
+        "AC19",
+        "AC20"
+      ],
+      "decisions": [
+        "D10",
+        "D11",
+        "D12",
+        "D13"
+      ],
+      "stage": "v1-planned",
+      "suggested_labels": [
+        "requirement"
+      ],
+      "body_file": "issues/V1-12.md",
+      "remote_issue": null
+    },
+    {
+      "id": "F-01",
+      "title": "[requirement][后续] 全NPC随机东方化与存档一致性",
+      "parent": "GOAL",
+      "depends_on": [
+        "V1-12"
+      ],
+      "requirements": [],
+      "acceptance": [],
+      "decisions": [],
+      "stage": "future-unallocated",
+      "suggested_labels": [
+        "requirement"
+      ],
+      "body_file": "issues/F-01.md",
+      "remote_issue": null
+    },
+    {
+      "id": "F-02",
+      "title": "[requirement][后续] 清理赛博设定并替换为东方世界观内容",
+      "parent": "GOAL",
+      "depends_on": [
+        "V1-12"
+      ],
+      "requirements": [],
+      "acceptance": [],
+      "decisions": [],
+      "stage": "future-unallocated",
+      "suggested_labels": [
+        "requirement"
+      ],
+      "body_file": "issues/F-02.md",
+      "remote_issue": null
+    },
+    {
+      "id": "F-03",
+      "title": "[requirement][后续] 最终东方化版本组合验收与交接",
+      "parent": "GOAL",
+      "depends_on": [
+        "F-01",
+        "F-02"
+      ],
+      "requirements": [],
+      "acceptance": [],
+      "decisions": [],
+      "stage": "future-unallocated",
+      "suggested_labels": [
+        "requirement"
+      ],
+      "body_file": "issues/F-03.md",
+      "remote_issue": null
+    }
+  ]
+}
