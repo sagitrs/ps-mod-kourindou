@@ -5,7 +5,7 @@ kourindou mod of game probably stolen.
 
 面向 **Probably Stolen — Cyberpunk Shopkeeper Sim**（Steam App 4348910）的设计与开发计划。代码仓为本仓；Mod ID、发布版本号及许可证尚未确定。**V1表示首个交付范围，不等于已决定发布1.0.0。**
 
-**当前是设计/计划和离线文档校验，不是可安装Mod。** [主Issue #1](https://github.com/sagitrs/ps-mod-kourindou/issues/1)已创建；其余16项仍是仓内草稿，未开票或派工。没有产品代码、游戏编译或游戏内验收。
+**当前是设计/计划和离线文档校验，不是可安装Mod。** 已建立原生Issue层级：[主票 #1](https://github.com/sagitrs/ps-mod-kourindou/issues/1) → [V1总票 #3](https://github.com/sagitrs/ps-mod-kourindou/issues/3) → 12张开发子票（#4—#15）。其余3项长期任务仍为草稿；尚未派工，没有Mod实现、游戏编译或游戏内验收。
 
 ## 产品范围
 
@@ -32,8 +32,8 @@ V1保留其他NPC、警局和革命军等其他派系及主体剧情，允许世
 | [验收方案](docs/05-validation.md) | 游戏功能边界与真实验收要求，当前未执行 |
 | [开发计划](docs/06-development-plan.md) | 阶段、依赖与长期路线 |
 | [接口证据](docs/07-evidence.md) | 公开资料、版本差异与未证明能力 |
-| [入仓与开票](docs/08-repository-handoff.md) | 当前主票与后续子Issue发布边界 |
-| [Issue规划目录](planning/README.md) | 17项规划：1张真实主Issue、16份未发布草稿 |
+| [入仓与开票](docs/08-repository-handoff.md) | 已创建层级与后续发布边界 |
+| [Issue规划目录](planning/README.md) | 17项规划：14张真实Issue、3份未发布草稿 |
 
 ## 技术现状
 
