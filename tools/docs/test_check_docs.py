@@ -21,6 +21,7 @@ class DocumentChecks(unittest.TestCase):
         self.root = Path(self.temporary.name) / "input"
         self.root.mkdir()
         shutil.copyfile(REPO / "README.md", self.root / "README.md")
+        shutil.copyfile(REPO / "LICENSE", self.root / "LICENSE")
         for folder in ("docs", "planning", "tools/docs"):
             shutil.copytree(REPO / folder, self.root / folder)
 

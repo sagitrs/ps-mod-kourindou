@@ -4,13 +4,13 @@
 
 用户已创建[本公开仓](https://github.com/sagitrs/ps-mod-kourindou)，首笔设计[PR #2](https://github.com/sagitrs/ps-mod-kourindou/pull/2)已合入。按用户后续建议，已建立原生层级：[主Issue #1](https://github.com/sagitrs/ps-mod-kourindou/issues/1) → [V1总票 #3](https://github.com/sagitrs/ps-mod-kourindou/issues/3) → 12张开发子票（#4—#15）。[建票记录](https://github.com/sagitrs/ps-mod-kourindou/issues/1#issuecomment-6763459847)列出真实编号、依赖和边界。**F-01/F-02/F-03仍为草稿；本次不派工、不实现Mod、不自行合入。**
 
-首笔PR的基座只有README，没有仓内贡献说明、许可证或CI工作流。Mod ID、版本号、许可证及独立评审/验收安排仍待确认；文档合入和建票不代表这些选择或玩法推荐值已获批准。下文保留后续发布流程，不作为重复创建已有14张票的指令。
+首笔PR的基座只有README，没有仓内贡献说明、许可证或CI工作流。2026-11-11 已确认开发期 Mod ID/持久化根 `sagitrs.kourindou`、namespace `Sagitrs.Kourindou`、开发标识 `0.1.0-dev` 与原创新代码/自有文档 MIT；正式发布版本号、正式审阅/验收人选及 manifest 真实语法仍待确认。文档合入和建票不代表这些选择或玩法推荐值已获批准。下文保留后续发布流程，不作为重复创建已有14张票的指令。
 
 ## 1. 入仓前
 
 1. 确认仓主、平台/地址、可见性、授权账号、采用的贡献/审阅规则及需求验收安排；不从机器人名或历史权限推定有权创建仓。
 2. 对设计和D决策做一轮审阅。允许待定项以明确阻塞记录入仓，但不能将未定规则写成已通过规格。
-3. 选择代码/文档许可证，另外核美术和其他第三方权利。没有许可证不等于默认沿用参考框架MIT。
+3. 已选择原创新代码/自有文档 MIT（2026-11-11）；仍需另外核美术和其他第三方权利。没有许可证不等于默认沿用参考框架MIT。
 4. 检查目标仓真实存在的贡献说明、目录结构和已有Issue，避免重复开票/覆盖已有工作。无载体时记录缺口，不伪造不存在的规范路径。
 5. 仅导入本包的`README.md`、`docs/`、`planning/`等文档内容；本地取证、凭据、安装目录、游戏DLL和私人存档不在其中。
 
