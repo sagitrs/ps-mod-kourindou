@@ -18,6 +18,16 @@ python3 tools/ci/test_verify_pure_core.py
 
 当前仓没有已启用的 CI；候选文件存在不等于远程检查已执行。若因 workflow 写入权限或 CI 策略无法启用，保留本候选并由有权方决定入口，不伪造远程绿灯。
 
+### 当前权限缺口（2026-11-11 实测）
+
+尝试把候选复制到 `.github/workflows/pure-core.yml` 并推送时，GitHub 拒绝：
+
+```text
+refusing to allow a GitHub App to create or update workflow `.github/workflows/pure-core.yml` without `workflows` permission
+```
+
+因此候选保留在本目录，未启用、未执行远程检查；需要有权方提供 workflow 写入/启用入口，或按仓规则另行决定 CI 方案。本 Agent 不借他人 token、不自改签发策略。
+
 ## 边界
 
 - 只覆盖游戏无关核心；不能替代 #5 真实适配或 #14 游戏内验收。
