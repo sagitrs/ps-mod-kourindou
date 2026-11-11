@@ -1,0 +1,9 @@
+# Build outputs
+bin/
+obj/
+TestResults/
+*.user
+
+# Local toolchain and caches (not source, not distributed)
+.tools/
+.cache/

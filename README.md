@@ -3,9 +3,9 @@ kourindou mod of game probably stolen.
 
 ## 香霖堂：东方经营扩展（Mod显示名暂定）
 
-面向 **Probably Stolen — Cyberpunk Shopkeeper Sim**（Steam App 4348910）的设计与开发计划。代码仓为本仓；Mod ID、发布版本号及许可证尚未确定。**V1表示首个交付范围，不等于已决定发布1.0.0。**
+面向 **Probably Stolen — Cyberpunk Shopkeeper Sim**（Steam App 4348910）的设计与开发计划。代码仓为本仓；开发期 Mod ID 为 `sagitrs.kourindou`，C# namespace 为 `Sagitrs.Kourindou`，开发标识 `0.1.0-dev`；原创新代码与自有文档采用 [MIT](LICENSE)，正式发布版本号仍未确定。**V1表示首个交付范围，不等于已决定发布1.0.0。**
 
-**当前是设计/计划和离线文档校验，不是可安装Mod。** 已建立原生Issue层级：[主票 #1](https://github.com/sagitrs/ps-mod-kourindou/issues/1) → [V1总票 #3](https://github.com/sagitrs/ps-mod-kourindou/issues/3) → 12张开发子票（#4—#15）。其余3项长期任务仍为草稿；尚未派工，没有Mod实现、游戏编译或游戏内验收。
+**当前是设计/计划、离线文档校验与游戏无关核心开发，不是可安装Mod。** 已建立原生Issue层级：[主票 #1](https://github.com/sagitrs/ps-mod-kourindou/issues/1) → [V1总票 #3](https://github.com/sagitrs/ps-mod-kourindou/issues/3) → 12张开发子票（#4—#15）。其余3项长期任务仍为草稿；已派工V1-03游戏无关核心切片，没有可加载Mod、游戏编译或游戏内验收。
 
 ## 产品范围
 
@@ -39,7 +39,20 @@ V1保留其他NPC、警局和革命军等其他派系及主体剧情，允许世
 
 原生Mod支持C#、自定义UI、按局ModData及夜间地点等。新角色身份/立绘、白天背景和确定性来访仍需目标游戏版本验证；不能把换头像当成新增角色。
 
-推荐Linux侧构建/逻辑测试、Windows正版客户端验收。游戏版本、SDK/框架与合法程序集尚未锁定。不把游戏DLL、游戏素材、真实存档或凭据放入代码仓和分发包。
+推荐Linux侧构建/逻辑测试、Windows正版客户端验收。纯核心已固定 .NET 10 SDK（见 `global.json`）；目标游戏版本、Unity/游戏 SDK 与合法程序集仍未锁定。不把游戏DLL、游戏素材、真实存档或凭据放入代码仓和分发包。
+
+## 游戏无关核心（开发中）
+
+`src/Kourindou.Core` 与 `tests/Kourindou.Core.Tests` 是不依赖游戏程序集的纯核心/单元测试切片，目前覆盖稳定角色身份、按槽状态版本边界、坏数据诊断与序列化保留。它**不是可安装Mod**，不证明原生 `IMod` 已加载、角色已到场、真档兼容或任何产品AC通过。
+
+构建/测试使用 `global.json` 固定的 .NET SDK 10.0.404：
+
+```sh
+dotnet build Kourindou.sln
+dotnet test Kourindou.sln
+```
+
+游戏真实适配仍由后续任务在合法固定构建、程序集引用和测试客户端到位后执行。
 
 ## 文档校验
 
