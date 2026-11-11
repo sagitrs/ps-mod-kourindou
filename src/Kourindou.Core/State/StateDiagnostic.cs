@@ -12,6 +12,7 @@ public static class StateDiagnosticCodes
 {
     public const string EmptyPayload = "empty_payload";
     public const string MalformedJson = "malformed_json";
+    public const string MalformedString = "malformed_string";
     public const string RootNotObject = "root_not_object";
     public const string MissingSchemaVersion = "missing_schema_version";
     public const string InvalidSchemaVersion = "invalid_schema_version";

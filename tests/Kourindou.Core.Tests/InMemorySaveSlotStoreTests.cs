@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Sagitrs.Kourindou.Core.State;
 
 namespace Sagitrs.Kourindou.Core.Tests;
@@ -52,6 +53,73 @@ public sealed class InMemorySaveSlotStoreTests
             result.Diagnostics,
             diagnostic => diagnostic.Code == StateDiagnosticCodes.SlotMismatch);
         Assert.False(store.TryGet("slot-a", out _));
+    }
+
+    [Fact]
+    public void Save_SnapshotsSharedInput_SoSlotMutationDoesNotLeak()
+    {
+        var store = new InMemorySaveSlotStore();
+        var sharedCharacters = new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+        {
+            ["alice"] = TestStateFactory.Json("""{"progress":1}"""),
+        };
+
+        Assert.True(store.Save("slot-a", new SaveEnvelope { SlotId = "slot-a", Characters = sharedCharacters }).Saved);
+        Assert.True(store.Save("slot-b", new SaveEnvelope { SlotId = "slot-b", Characters = sharedCharacters }).Saved);
+
+        Assert.True(store.TryGet("slot-a", out var loadedA));
+        var stateA = Assert.IsType<SaveEnvelope>(loadedA);
+        stateA.Characters["alice"] = TestStateFactory.Json("""{"progress":9}""");
+
+        Assert.True(store.TryGet("slot-b", out var loadedB));
+        var stateB = Assert.IsType<SaveEnvelope>(loadedB);
+        Assert.Equal(1, stateB.Characters["alice"].GetProperty("progress").GetInt32());
+        Assert.NotSame(stateA.Characters, stateB.Characters);
+
+        sharedCharacters["alice"] = TestStateFactory.Json("""{"progress":42}""");
+
+        Assert.True(store.TryGet("slot-a", out var reloadedA));
+        var reloadedStateA = Assert.IsType<SaveEnvelope>(reloadedA);
+        Assert.Equal(1, reloadedStateA.Characters["alice"].GetProperty("progress").GetInt32());
+        Assert.NotSame(sharedCharacters, reloadedStateA.Characters);
+    }
+
+    [Fact]
+    public void TryGet_ReturnsIndependentSnapshot_EachCall()
+    {
+        var store = new InMemorySaveSlotStore();
+        var state = TestStateFactory.Envelope("slot-a", ("alice", """{"progress":1}"""));
+        Assert.True(store.Save("slot-a", state).Saved);
+
+        Assert.True(store.TryGet("slot-a", out var first));
+        Assert.True(store.TryGet("slot-a", out var second));
+        var firstState = Assert.IsType<SaveEnvelope>(first);
+        var secondState = Assert.IsType<SaveEnvelope>(second);
+
+        firstState.Characters["alice"] = TestStateFactory.Json("""{"progress":9}""");
+
+        Assert.NotSame(firstState.Characters, secondState.Characters);
+        Assert.Equal(1, secondState.Characters["alice"].GetProperty("progress").GetInt32());
+
+        Assert.True(store.TryGet("slot-a", out var third));
+        var thirdState = Assert.IsType<SaveEnvelope>(third);
+        Assert.Equal(1, thirdState.Characters["alice"].GetProperty("progress").GetInt32());
+    }
+
+    [Fact]
+    public void Load_ReturnsStateIndependentOfStoredSnapshot()
+    {
+        var store = new InMemorySaveSlotStore();
+        var raw = TestStateFactory.RawState(1, "slot-a", """{"alice":{"progress":1}}""");
+
+        var result = store.Load("slot-a", raw);
+        Assert.True(result.IsUsable);
+        var loaded = Assert.IsType<SaveEnvelope>(result.State);
+        loaded.Characters["alice"] = TestStateFactory.Json("""{"progress":9}""");
+
+        Assert.True(store.TryGet("slot-a", out var stored));
+        var storedState = Assert.IsType<SaveEnvelope>(stored);
+        Assert.Equal(1, storedState.Characters["alice"].GetProperty("progress").GetInt32());
     }
 
     [Fact]
