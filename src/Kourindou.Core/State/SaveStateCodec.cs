@@ -35,6 +35,10 @@ public static class SaveStateCodec
         {
             document = JsonDocument.Parse(json);
         }
+        catch (InvalidOperationException exception)
+        {
+            return Rejected(json, StateDiagnosticCodes.MalformedString, $"State payload contains malformed UTF-16: {exception.Message}");
+        }
         catch (JsonException exception)
         {
             return Rejected(json, StateDiagnosticCodes.MalformedJson, $"State payload is not valid JSON: {exception.Message}");
@@ -48,8 +52,24 @@ public static class SaveStateCodec
                 return Rejected(json, StateDiagnosticCodes.RootNotObject, "State root must be a JSON object.");
             }
 
-            if (!root.TryGetProperty("schemaVersion", out var schemaVersionElement))
+            // JsonDocument accepts unpaired UTF-16 surrogates; decoding them later
+            // throws InvalidOperationException. Validate every string up front so
+            // malformed input stays a recoverable rejection with RawPayload intact.
+            if (!TryValidateStrings(root, out var malformedStringError))
             {
+                return Rejected(
+                    json,
+                    StateDiagnosticCodes.MalformedString,
+                    $"State payload contains malformed UTF-16: {malformedStringError}");
+            }
+
+            if (!TryGetPropertySafe(root, "schemaVersion", out var schemaVersionElement, out var schemaVersionError))
+            {
+                if (schemaVersionError is not null)
+                {
+                    return Rejected(json, StateDiagnosticCodes.MalformedString, $"State schemaVersion lookup failed: {schemaVersionError}");
+                }
+
                 return Rejected(json, StateDiagnosticCodes.MissingSchemaVersion, "State schemaVersion is missing.");
             }
 
@@ -75,20 +95,56 @@ public static class SaveStateCodec
                     $"State schemaVersion {schemaVersion} has no registered migration; original payload preserved.");
             }
 
-            if (!root.TryGetProperty("slotId", out var slotIdElement)
-                || slotIdElement.ValueKind != JsonValueKind.String
-                || string.IsNullOrWhiteSpace(slotIdElement.GetString()))
+            if (!TryGetPropertySafe(root, "slotId", out var slotIdElement, out var slotIdLookupError))
+            {
+                if (slotIdLookupError is not null)
+                {
+                    return Rejected(json, StateDiagnosticCodes.MalformedString, $"State slotId lookup failed: {slotIdLookupError}");
+                }
+
+                return Rejected(json, StateDiagnosticCodes.MissingSlotId, "State slotId is missing or empty.");
+            }
+
+            if (slotIdElement.ValueKind != JsonValueKind.String)
             {
                 return Rejected(json, StateDiagnosticCodes.MissingSlotId, "State slotId is missing or empty.");
             }
 
-            if (!root.TryGetProperty("characters", out var charactersElement)
-                || charactersElement.ValueKind != JsonValueKind.Object)
+            string slotId;
+            try
+            {
+                slotId = slotIdElement.GetString() ?? string.Empty;
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Rejected(json, StateDiagnosticCodes.MalformedString, $"State slotId contains malformed UTF-16: {exception.Message}");
+            }
+
+            if (string.IsNullOrWhiteSpace(slotId))
+            {
+                return Rejected(json, StateDiagnosticCodes.MissingSlotId, "State slotId is missing or empty.");
+            }
+
+            if (!TryGetPropertySafe(root, "characters", out var charactersElement, out var charactersLookupError))
+            {
+                if (charactersLookupError is not null)
+                {
+                    return Rejected(json, StateDiagnosticCodes.MalformedString, $"State characters lookup failed: {charactersLookupError}");
+                }
+
+                return Rejected(json, StateDiagnosticCodes.InvalidCharacters, "State characters must be a JSON object.");
+            }
+
+            if (charactersElement.ValueKind != JsonValueKind.Object)
             {
                 return Rejected(json, StateDiagnosticCodes.InvalidCharacters, "State characters must be a JSON object.");
             }
 
-            var duplicateIds = FindDuplicatePropertyNames(charactersElement);
+            if (!TryFindDuplicatePropertyNames(charactersElement, out var duplicateIds, out var duplicateError))
+            {
+                return Rejected(json, StateDiagnosticCodes.MalformedString, $"State characters contain malformed UTF-16: {duplicateError}");
+            }
+
             if (duplicateIds.Count > 0)
             {
                 return Rejected(
@@ -101,6 +157,10 @@ public static class SaveStateCodec
             try
             {
                 state = JsonSerializer.Deserialize<SaveEnvelope>(json, SerializerOptions);
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Rejected(json, StateDiagnosticCodes.MalformedString, $"State payload contains malformed UTF-16: {exception.Message}");
             }
             catch (JsonException exception)
             {
@@ -128,20 +188,97 @@ public static class SaveStateCodec
         }
     }
 
-    private static IReadOnlyList<string> FindDuplicatePropertyNames(JsonElement element)
+    private static bool TryValidateStrings(JsonElement element, out string? malformedError)
+    {
+        try
+        {
+            switch (element.ValueKind)
+            {
+                case JsonValueKind.String:
+                    _ = element.GetString();
+                    break;
+                case JsonValueKind.Object:
+                    foreach (var property in element.EnumerateObject())
+                    {
+                        _ = property.Name;
+                        if (!TryValidateStrings(property.Value, out malformedError))
+                        {
+                            return false;
+                        }
+                    }
+
+                    break;
+                case JsonValueKind.Array:
+                    foreach (var item in element.EnumerateArray())
+                    {
+                        if (!TryValidateStrings(item, out malformedError))
+                        {
+                            return false;
+                        }
+                    }
+
+                    break;
+            }
+
+            malformedError = null;
+            return true;
+        }
+        catch (InvalidOperationException exception)
+        {
+            malformedError = exception.Message;
+            return false;
+        }
+    }
+
+    private static bool TryGetPropertySafe(
+        JsonElement root,
+        string propertyName,
+        out JsonElement value,
+        out string? malformedError)
+    {
+        try
+        {
+            var found = root.TryGetProperty(propertyName, out value);
+            malformedError = null;
+            return found;
+        }
+        catch (InvalidOperationException exception)
+        {
+            value = default;
+            malformedError = exception.Message;
+            return false;
+        }
+    }
+
+    private static bool TryFindDuplicatePropertyNames(
+        JsonElement element,
+        out IReadOnlyList<string> duplicates,
+        out string? malformedError)
     {
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        var duplicates = new List<string>();
+        var found = new List<string>();
 
-        foreach (var property in element.EnumerateObject())
+        try
         {
-            if (!seen.Add(property.Name) && !duplicates.Contains(property.Name, StringComparer.Ordinal))
+            foreach (var property in element.EnumerateObject())
             {
-                duplicates.Add(property.Name);
+                var name = property.Name;
+                if (!seen.Add(name) && !found.Contains(name, StringComparer.Ordinal))
+                {
+                    found.Add(name);
+                }
             }
-        }
 
-        return duplicates;
+            duplicates = found;
+            malformedError = null;
+            return true;
+        }
+        catch (InvalidOperationException exception)
+        {
+            duplicates = Array.Empty<string>();
+            malformedError = exception.Message;
+            return false;
+        }
     }
 
     private static StateLoadResult Rejected(string rawPayload, string code, string message)
