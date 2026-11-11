@@ -1,0 +1,22 @@
+# Candidate only: not enabled or executed until workflow-write permission and
+# CI policy are confirmed. Pin actions to full commit SHAs before enabling.
+name: pure-core
+
+on:
+  push:
+    branches: [main, "v1/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pure-core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.404
+      - name: Verify game-independent core
+        run: ./tools/ci/verify-pure-core.sh
