@@ -6,7 +6,6 @@ import subprocess
 import tempfile
 import unittest
 
-REPO = Path(__file__).resolve().parents[2]
 WRAPPER = Path(__file__).with_name("verify-pure-core.sh")
 
 FAKE_DOTNET = """#!/usr/bin/env bash
