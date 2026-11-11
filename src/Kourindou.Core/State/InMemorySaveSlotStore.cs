@@ -1,8 +1,12 @@
+using System.Text.Json;
+
 namespace Sagitrs.Kourindou.Core.State;
 
 /// <summary>
 /// In-memory per-slot store used to prove slot isolation without touching any
-/// game save API or filesystem save file.
+/// game save API or filesystem save file. Save snapshots the caller's envelope;
+/// TryGet returns an independent snapshot. Mutating either side does not change
+/// the store or another slot.
 /// </summary>
 public sealed class InMemorySaveSlotStore
 {
@@ -29,7 +33,7 @@ public sealed class InMemorySaveSlotStore
                 result.RawPayload);
         }
 
-        _slots[slotId] = result.State;
+        _slots[slotId] = Snapshot(result.State);
         return result;
     }
 
@@ -48,7 +52,7 @@ public sealed class InMemorySaveSlotStore
                 $"State belongs to slot '{state.SlotId}', not '{slotId}'.")]);
         }
 
-        _slots[slotId] = state;
+        _slots[slotId] = Snapshot(state);
         return new StateSaveResult(true, Array.Empty<StateDiagnostic>());
     }
 
@@ -62,12 +66,42 @@ public sealed class InMemorySaveSlotStore
 
         if (_slots.TryGetValue(slotId, out var found))
         {
-            state = found;
+            state = Snapshot(found);
             return true;
         }
 
         state = null;
         return false;
+    }
+
+    private static SaveEnvelope Snapshot(SaveEnvelope state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(state.Characters);
+
+        var characters = new Dictionary<string, JsonElement>(state.Characters.Count, StringComparer.Ordinal);
+        foreach (var pair in state.Characters)
+        {
+            characters[pair.Key] = pair.Value.Clone();
+        }
+
+        Dictionary<string, JsonElement>? extensionData = null;
+        if (state.ExtensionData is not null)
+        {
+            extensionData = new Dictionary<string, JsonElement>(state.ExtensionData.Count, StringComparer.Ordinal);
+            foreach (var pair in state.ExtensionData)
+            {
+                extensionData[pair.Key] = pair.Value.Clone();
+            }
+        }
+
+        return new SaveEnvelope
+        {
+            SchemaVersion = state.SchemaVersion,
+            SlotId = state.SlotId,
+            Characters = characters,
+            ExtensionData = extensionData,
+        };
     }
 
     private static StateLoadResult Rejected(string code, string message, string rawPayload)

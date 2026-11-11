@@ -73,6 +73,58 @@ public sealed class SaveStateCodecTests
     }
 
     [Fact]
+    public void Deserialize_RejectsMalformedSlotIdString_AndPreservesRawPayload()
+    {
+        const string raw = """{"schemaVersion":1,"slotId":"\uD800","characters":{}}""";
+        var result = SaveStateCodec.Deserialize(raw);
+
+        Assert.False(result.IsUsable);
+        Assert.Equal(raw, result.RawPayload);
+        Assert.Contains(
+            result.Diagnostics,
+            diagnostic => diagnostic.Code == StateDiagnosticCodes.MalformedString);
+    }
+
+    [Fact]
+    public void Deserialize_RejectsMalformedCharacterKeyString_AndPreservesRawPayload()
+    {
+        const string raw = """{"schemaVersion":1,"slotId":"slot-a","characters":{"\uD800":{}}}""";
+        var result = SaveStateCodec.Deserialize(raw);
+
+        Assert.False(result.IsUsable);
+        Assert.Equal(raw, result.RawPayload);
+        Assert.Contains(
+            result.Diagnostics,
+            diagnostic => diagnostic.Code == StateDiagnosticCodes.MalformedString);
+    }
+
+    [Fact]
+    public void Deserialize_RejectsMalformedTopLevelKeyString_AndPreservesRawPayload()
+    {
+        const string raw = """{"schemaVersion":1,"slotId":"slot-a","characters":{},"\uD800":1}""";
+        var result = SaveStateCodec.Deserialize(raw);
+
+        Assert.False(result.IsUsable);
+        Assert.Equal(raw, result.RawPayload);
+        Assert.Contains(
+            result.Diagnostics,
+            diagnostic => diagnostic.Code == StateDiagnosticCodes.MalformedString);
+    }
+
+    [Fact]
+    public void Deserialize_RejectsMalformedCharacterValueString_AndPreservesRawPayload()
+    {
+        const string raw = """{"schemaVersion":1,"slotId":"slot-a","characters":{"alice":{"note":"\uD800"}}}""";
+        var result = SaveStateCodec.Deserialize(raw);
+
+        Assert.False(result.IsUsable);
+        Assert.Equal(raw, result.RawPayload);
+        Assert.Contains(
+            result.Diagnostics,
+            diagnostic => diagnostic.Code == StateDiagnosticCodes.MalformedString);
+    }
+
+    [Fact]
     public void Deserialize_RejectsMissingSlotId()
     {
         const string raw = """{"schemaVersion":1,"characters":{}}""";
