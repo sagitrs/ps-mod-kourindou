@@ -53,8 +53,8 @@ def check(root):
         return owned_file(path).read_text(encoding="utf-8")
 
     # This is a declared document set, not a scan of .git, builds or game assets.
-    markdown = {root / "README.md", root / "tools/docs/README.md"}
-    for folder in ("docs", "planning"):
+    markdown = {root / "README.md", root / "tools/README.md"}
+    for folder in ("docs", "planning", "tools"):
         base = root / folder
         if base.is_symlink() or not base.is_dir():
             raise ValueError(f"missing/invalid document directory: {folder}")

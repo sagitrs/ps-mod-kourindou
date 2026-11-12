@@ -22,7 +22,7 @@ class DocumentChecks(unittest.TestCase):
         self.root.mkdir()
         shutil.copyfile(REPO / "README.md", self.root / "README.md")
         shutil.copyfile(REPO / "LICENSE", self.root / "LICENSE")
-        for folder in ("docs", "planning", "tools/docs"):
+        for folder in ("docs", "planning", "tools"):
             shutil.copytree(REPO / folder, self.root / folder)
 
     def run_check(self, expected, root=None, default=False):

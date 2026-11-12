@@ -7,6 +7,8 @@ Usage: tools/ci/verify-pure-core.sh [--configuration <Debug|Release>] [--skip-re
 
 Runs only the game-independent core build and tests. This script contains no
 game assembly references and does not claim Mod loading or in-game acceptance.
+It runs tests with a fresh TRX report in a new temporary directory, then checks
+that at least one test actually executed and that the run is completely green.
 It exits non-zero if any step fails, preserving the failing step's exit code.
 EOF
 }
@@ -50,6 +52,11 @@ if ! command -v "$dotnet_bin" >/dev/null 2>&1; then
   exit 127
 fi
 
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "error: python3 is required to validate the TRX test report" >&2
+  exit 127
+fi
+
 dotnet_version="$("$dotnet_bin" --version)"
 echo "dotnet: $dotnet_version"
 echo "configuration: $configuration"
@@ -73,6 +80,12 @@ if [ "$skip_restore" != "true" ]; then
 fi
 
 run_step "build" "$dotnet_bin" build Kourindou.sln --no-restore --nologo --configuration "$configuration" -m:2
-run_step "test" "$dotnet_bin" test Kourindou.sln --no-build --no-restore --nologo --configuration "$configuration" -m:2
+
+report_dir="$(mktemp -d "${TMPDIR:-/tmp}/kourindou-pure-core-trx.XXXXXX")"
+trap 'rm -rf "$report_dir"' EXIT
+echo "report dir: $report_dir"
+
+run_step "test" "$dotnet_bin" test Kourindou.sln --no-build --no-restore --nologo --configuration "$configuration" -m:2 --logger "trx;LogFileName=pure-core.trx" --results-directory "$report_dir"
+run_step "test-report" python3 tools/ci/check_trx.py "$report_dir"
 
 echo "pure-core verification passed"
