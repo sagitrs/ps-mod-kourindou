@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+
 namespace Sagitrs.Kourindou.Core.Characters;
 
 /// <summary>
@@ -13,10 +15,13 @@ public static class CharacterCatalog
         new(CharacterId.Sakuya, "character.sakuya.name", RegionId.Upper),
     ];
 
+    private static readonly ReadOnlyCollection<CharacterDefinition> AllDefinitions =
+        Array.AsReadOnly(Definitions);
+
     private static readonly Dictionary<string, CharacterDefinition> ById =
         Definitions.ToDictionary(definition => definition.Id.Value, StringComparer.Ordinal);
 
-    public static IReadOnlyList<CharacterDefinition> All => Definitions;
+    public static IReadOnlyList<CharacterDefinition> All => AllDefinitions;
 
     public static bool Contains(CharacterId id)
     {

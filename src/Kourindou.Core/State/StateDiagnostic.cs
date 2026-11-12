@@ -20,6 +20,7 @@ public static class StateDiagnosticCodes
     public const string UnsupportedOlderSchema = "unsupported_older_schema";
     public const string MissingSlotId = "missing_slot_id";
     public const string InvalidCharacters = "invalid_characters";
+    public const string DuplicateTopLevelProperty = "duplicate_top_level_property";
     public const string DuplicateCharacterId = "duplicate_character_id";
     public const string UnknownCharacterId = "unknown_character_id";
     public const string SlotMismatch = "slot_mismatch";

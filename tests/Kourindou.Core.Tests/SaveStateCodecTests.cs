@@ -136,6 +136,22 @@ public sealed class SaveStateCodecTests
             diagnostic => diagnostic.Code == StateDiagnosticCodes.MissingSlotId);
     }
 
+    [Theory]
+    [InlineData("""{"schemaVersion":1,"schemaVersion":2,"slotId":"slot-a","characters":{}}""")]
+    [InlineData("""{"schemaVersion":1,"slotId":"slot-a","slotId":"slot-b","characters":{}}""")]
+    [InlineData("""{"schemaVersion":1,"slotId":"slot-a","characters":{},"characters":{}}""")]
+    [InlineData("""{"schemaVersion":1,"slotId":"slot-a","characters":{},"future":1,"future":2}""")]
+    public void Deserialize_RejectsDuplicateTopLevelProperties(string raw)
+    {
+        var result = SaveStateCodec.Deserialize(raw);
+
+        Assert.False(result.IsUsable);
+        Assert.Equal(raw, result.RawPayload);
+        Assert.Contains(
+            result.Diagnostics,
+            diagnostic => diagnostic.Code == StateDiagnosticCodes.DuplicateTopLevelProperty);
+    }
+
     [Fact]
     public void Deserialize_RejectsDuplicateCharacterIds()
     {

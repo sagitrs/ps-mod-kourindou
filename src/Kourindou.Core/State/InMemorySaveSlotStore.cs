@@ -8,6 +8,10 @@ namespace Sagitrs.Kourindou.Core.State;
 /// TryGet returns an independent snapshot. Mutating either side does not change
 /// the store or another slot.
 /// </summary>
+/// <remarks>
+/// This store is intentionally single-threaded and not thread-safe. Callers must
+/// serialize access; the class makes no concurrent read/write safety claim.
+/// </remarks>
 public sealed class InMemorySaveSlotStore
 {
     private readonly Dictionary<string, SaveEnvelope> _slots = new(StringComparer.Ordinal);
