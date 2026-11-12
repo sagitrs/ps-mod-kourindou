@@ -34,4 +34,15 @@ public sealed class CharacterCatalogTests
                 .Distinct(StringComparer.Ordinal)
                 .Count());
     }
+
+    [Fact]
+    public void Catalog_AllCannotBeMutatedByCallers()
+    {
+        var all = CharacterCatalog.All;
+        var list = Assert.IsAssignableFrom<IList<CharacterDefinition>>(all);
+
+        Assert.True(list.IsReadOnly);
+        Assert.Throws<NotSupportedException>(
+            () => list.Add(new CharacterDefinition(CharacterId.Create("test"), "test", RegionId.Lower)));
+    }
 }

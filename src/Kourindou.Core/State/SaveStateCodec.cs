@@ -63,6 +63,24 @@ public static class SaveStateCodec
                     $"State payload contains malformed UTF-16: {malformedStringError}");
             }
 
+            // JsonDocument accepts duplicate object keys. Reject duplicate top-level
+            // properties explicitly instead of relying on last-wins deserialization.
+            if (!TryFindDuplicatePropertyNames(root, out var duplicateTopLevelNames, out var duplicateTopLevelError))
+            {
+                return Rejected(
+                    json,
+                    StateDiagnosticCodes.MalformedString,
+                    $"State top-level properties contain malformed UTF-16: {duplicateTopLevelError}");
+            }
+
+            if (duplicateTopLevelNames.Count > 0)
+            {
+                return Rejected(
+                    json,
+                    StateDiagnosticCodes.DuplicateTopLevelProperty,
+                    $"Duplicate top-level properties are not allowed: {string.Join(", ", duplicateTopLevelNames)}.");
+            }
+
             if (!TryGetPropertySafe(root, "schemaVersion", out var schemaVersionElement, out var schemaVersionError))
             {
                 if (schemaVersionError is not null)
