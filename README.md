@@ -63,7 +63,7 @@ python3 tools/docs/check_docs.py
 python3 tools/docs/test_check_docs.py
 ```
 
-本仓测试工具根为 `tools/docs/`，使用方式、断言范围、负例和失效条件见[工具索引](tools/docs/README.md)。这些命令只检查文档/规划结构，不运行游戏、不完成20项产品验收，不证明设计决策已经获得批准。此笔不添加CI工作流，不能把没有远端检查写成CI通过。
+本仓测试工具根为 `tools/`，使用方式、断言范围、负例和失效条件见[工具索引](tools/README.md)。这些命令只检查文档/规划结构或游戏无关核心，不运行游戏、不完成20项产品验收，不证明设计决策已经获得批准。当前没有已启用的远端CI，不能把没有远端检查写成CI通过。
 
-<!-- test-tool-root: tools/docs/ -->
-<!-- test-tool-index: tools/docs/README.md -->
+<!-- test-tool-root: tools/ -->
+<!-- test-tool-index: tools/README.md -->
