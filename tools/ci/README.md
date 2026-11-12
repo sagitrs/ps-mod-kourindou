@@ -1,8 +1,8 @@
-# 纯核心 CI 候选
+# 纯核心 CI
 
 [返回工具索引](../README.md)
 
-本目录是 V1-03 游戏无关核心的本地验证入口与 CI 候选。它**不引用游戏程序集**，不证明 Mod 可加载、角色已到场、真实存档兼容或任何 AC01—AC20 通过。
+本目录是 V1-03 游戏无关核心的本地验证入口与已启用 CI 的支撑资产。它**不引用游戏程序集**，不证明 Mod 可加载、角色已到场、真实存档兼容或任何 AC01—AC20 通过。
 
 ## 本地命令
 
@@ -18,28 +18,20 @@ python3 tools/ci/test_verify_pure_core.py
 
 `test_verify_pure_core.py` 使用假 `dotnet` 可执行文件验证 restore/build/test 非零传播，以及缺报告、0 测试、全部跳过、失败报告、缺工具、参数错误等负控；不需要游戏材料。
 
-## GitHub Actions 候选
+## 已启用真实 CI
 
-[github-actions/pure-core.yml](github-actions/pure-core.yml) 是**未启用**候选：
+- **唯一维护入口**：`.github/workflows/pure-core.yml`。
+- 工作流依次运行 `tools/docs/check_docs.py`、`tools/docs/test_check_docs.py`、`tools/ci/test_verify_pure_core.py`（14 项守卫自测），再运行 `tools/ci/verify-pure-core.sh`（28 项核心测试 + 新鲜 TRX 执行守卫）。
+- 固定 `ubuntu-24.04`、SDK `10.0.404`、actions 完整提交 SHA、`timeout-minutes: 10`、`contents: read`；使用实际可用 CPU 中的 2 核与 2 GiB .NET GC 上限。
+- 实例：PR17 整合头 `05a758aa2f1ff2788807ae785087ebdae0035ab9`，[push run 43166113417](https://github.com/sagitrs/ps-mod-kourindou/actions/runs/43166113417) 与 [PR run 43166118863](https://github.com/sagitrs/ps-mod-kourindou/actions/runs/43166118863) 均 success。
+- 该 CI 只覆盖游戏无关核心/文档/守卫自测；**不运行游戏、不操作真实存档、不覆盖 AC01—AC20**。不能把 CI 绿写成游戏或产品验收通过。
 
-- `runs-on: ubuntu-24.04`，固定 SDK `10.0.404`；
-- job 硬上界 `timeout-minutes: 10`；
-- `taskset -c 0,1`（2 CPU）、`DOTNET_PROCESSOR_COUNT=2`、`DOTNET_GCHeapHardLimit=0x80000000`（2 GiB）与 `-m:2`；
-- `actions/checkout` 与 `actions/setup-dotnet` 已固定完整提交 SHA，保留 `contents: read`，不使用 `pull_request_target`、游戏引用、私有材料或共享 self-hosted 主机。
+## 维护约定
 
-当前仓没有已启用的 CI；候选文件存在不等于远程检查已执行。
-
-## 接线状态与权限边界
-
-- 2026-11-11 本 Agent 尝试自行推送 `.github/workflows/pure-core.yml` 时被 GitHub 拒绝：
-  `refusing to allow a GitHub App to create or update workflow '.github/workflows/pure-core.yml' without 'workflows' permission`
-- 2026-11-12 的 W2 决定改为：由 W2 使用自己的**单仓短期 App 令牌**一次性协作用 `.github/workflows/pure-core.yml` 接线；不把 W2 令牌交给本 Agent，不改变 Paseo 长期签发策略，不授予跨仓/主机/保护/秘密/actions-write 权限。
-- 因此本 Agent 只能在 `tools/ci/` 提供可审候选；当前**未接线、未启用、无远端 checks**。接线前 W2 仍需核候选和启用风险；本候选不直接启用。
-- 若 W2 的接线贡献进入交付，W2 对受影响交件披露共同贡献并回避计数 APP/最终验收；正常独立评审与合法合入要求不免。
-
-## 与被审 PR 的关系
-
-本目录位于 PR #18，基于 PR #17 的 `v1/6-core-slice` 堆叠。PR #18 的 checks（接线后）覆盖的是“PR17 已审核心 + 本 CI 候选”的组合，不能自动当作 PR17 准确 head 的远端 CI 绿；子分支绿不无说明挪给父 PR。PR #17 合入后，该工作流可在目标分支继续覆盖同一核心。
+- 只编辑 `.github/workflows/pure-core.yml`。旧候选 `tools/ci/github-actions/pure-core.yml` 已在真实 CI 启用后删除，避免编辑错副本。
+- 首次接线由 W2 使用单仓短期 App 令牌完成；本 Agent 未持有或借用该令牌。后续维护走本仓正常 workflow 权限。
+- 若后续 workflow 编辑再次被 403 拒绝，保留脱敏原错误交 CIE 一次；不借他人 token、不自改签发策略、不伪造远程执行。
+- PR18 已作为 CI 候选前向整合进 PR17（整合头 `05a758a`）；不要将其他 head 的 CI 绿无说明挪给 PR17。
 
 ## 边界
 

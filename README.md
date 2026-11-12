@@ -52,6 +52,8 @@ dotnet build Kourindou.sln
 dotnet test Kourindou.sln
 ```
 
+真实 CI 入口为 `.github/workflows/pure-core.yml`；它运行文档检查/自测、14 项 CI 守卫自测和 28 项纯核心测试，但只证明游戏无关核心，不证明游戏内行为。
+
 游戏真实适配仍由后续任务在合法固定构建、程序集引用和测试客户端到位后执行。
 
 ## 文档校验
@@ -63,7 +65,7 @@ python3 tools/docs/check_docs.py
 python3 tools/docs/test_check_docs.py
 ```
 
-本仓测试工具根为 `tools/`，使用方式、断言范围、负例和失效条件见[工具索引](tools/README.md)。这些命令只检查文档/规划结构或游戏无关核心，不运行游戏、不完成20项产品验收，不证明设计决策已经获得批准。当前没有已启用的远端CI，不能把没有远端检查写成CI通过。
+本仓测试工具根为 `tools/`，使用方式、断言范围、负例和失效条件见[工具索引](tools/README.md)。这些命令只检查文档/规划结构或游戏无关核心，不运行游戏、不完成20项产品验收，不证明设计决策已经获得批准。本仓已启用纯核心 `pure-core` CI，运行文档检查/自测、CI 守卫自测与游戏无关核心测试；该 CI 不运行游戏，不能把 CI 绿写成游戏或产品验收通过。
 
 <!-- test-tool-root: tools/ -->
 <!-- test-tool-index: tools/README.md -->
