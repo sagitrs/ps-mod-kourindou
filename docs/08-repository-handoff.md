@@ -4,7 +4,7 @@
 
 用户已创建[本公开仓](https://github.com/sagitrs/ps-mod-kourindou)，首笔设计[PR #2](https://github.com/sagitrs/ps-mod-kourindou/pull/2)已合入。按用户后续建议，已建立原生层级：[主Issue #1](https://github.com/sagitrs/ps-mod-kourindou/issues/1) → [V1总票 #3](https://github.com/sagitrs/ps-mod-kourindou/issues/3) → 12张开发子票（#4—#15）。[建票记录](https://github.com/sagitrs/ps-mod-kourindou/issues/1#issuecomment-6763459847)列出真实编号、依赖和边界。**F-01/F-02/F-03仍为草稿；本次不派工、不实现Mod、不自行合入。**
 
-首笔PR的基座只有README，没有仓内贡献说明、许可证或CI工作流。2026-11-11 已确认开发期 Mod ID/持久化根 `sagitrs.kourindou`、namespace `Sagitrs.Kourindou`、开发标识 `0.1.0-dev` 与原创新代码/自有文档 MIT；正式发布版本号、正式审阅/验收人选及 manifest 真实语法仍待确认。文档合入和建票不代表这些选择或玩法推荐值已获批准。下文保留后续发布流程，不作为重复创建已有14张票的指令。
+首笔PR的基座只有README，没有仓内贡献说明、许可证或CI工作流。2026-11-11 已确认开发期 Mod ID/持久化根 `sagitrs.kourindou`、namespace `Sagitrs.Kourindou`、开发标识 `0.1.0-dev` 与原创新代码/自有文档 MIT；2026-11-12 已启用仅纯核心的 `pure-core` CI（W2 首次接线于 `e8ab5ca`，PR17 整合头 `05a758a` 已跑真实 checks）；仍无游戏 AC CI。正式发布版本号、正式审阅/验收人选及 manifest 真实语法仍待确认。文档合入和建票不代表这些选择或玩法推荐值已获批准。下文保留后续发布流程，不作为重复创建已有14张票的指令。
 
 ## 1. 入仓前
 
@@ -18,7 +18,7 @@
 
 在获准分支提交文档，通过目标仓PR/评审流程。仓内Markdown相对链接以本包根目录为基准，若放入子目录，需要一起调整导航。
 
-本仓没有Mod源码、游戏构建/运行入口或CI配置。已有的`tools/docs/`仅为可运行文档检查及自测，不能冒充游戏测试。后续工程票负责产品构建与CI，不能展示不存在的构建命令或绿色徽章。
+本仓已有游戏无关核心源码和 `pure-core` CI；仍没有可加载Mod、游戏构建/运行入口或游戏验收CI。`tools/docs/`与`tools/ci/`只覆盖文档检查与游戏无关核心，不能冒充游戏测试。后续工程票负责产品构建与游戏内CI，不能展示不存在的构建命令或绿色徽章。
 
 ## 3. Issue结构
 
