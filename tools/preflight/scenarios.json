@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "scenarios": [
+    {
+      "id": "vanilla-smoke",
+      "layer": "game-scenario",
+      "purpose": "Original game baseline without the Mod.",
+      "steps": [
+        "Lock a legal game build, platform/Proton client and an isolated test prefix.",
+        "Launch the game without the Mod.",
+        "Observe the main menu using independent evidence.",
+        "Open settings and return without changing settings.",
+        "Do not load the daily save."
+      ],
+      "requiredEvidence": [
+        "game build and platform/Proton binding",
+        "process-external observation of main menu",
+        "settings open/return observation",
+        "test save/Cloud isolation declaration"
+      ],
+      "notAsserted": [
+        "Mod loading",
+        "character identity",
+        "D02/D03/D06/D08 gameplay decisions"
+      ]
+    },
+    {
+      "id": "single-character-native-flow",
+      "layer": "game-scenario",
+      "purpose": "One placeholder character through native event, save, cross-process restart, two slots and vanilla load after disabling the Mod.",
+      "steps": [
+        "Pass the exact candidate package through the real scanner/load path.",
+        "Create a new isolated test save.",
+        "Make the placeholder character appear as an independent identity and reach the counter.",
+        "Observe a native trade event and its state.",
+        "Perform a native save.",
+        "Quit the process and restart with the same save.",
+        "Verify a second slot does not receive the first slot's state.",
+        "Disable the Mod only on the test copy and load with the original game.",
+        "Re-enable the Mod only under the agreed test rule."
+      ],
+      "requiredEvidence": [
+        "real scanner/load output",
+        "independent character identity diagnostic",
+        "native trade event observation",
+        "save and restart observation",
+        "two-slot isolation observation",
+        "vanilla load after disabling the Mod"
+      ],
+      "notAsserted": [
+        "D02 affection growth values",
+        "D03 night-help effects or prices",
+        "D06 daily schedule exceptions",
+        "D08 CG or relationship flow",
+        "AC01-AC20 combined acceptance"
+      ]
+    }
+  ]
+}

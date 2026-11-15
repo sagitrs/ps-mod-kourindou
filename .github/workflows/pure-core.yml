@@ -23,13 +23,14 @@ jobs:
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
         with:
           dotnet-version: 10.0.404
-      - name: Check docs and CI guard self-tests
+      - name: Check docs, guard and preflight self-tests
         env:
           TMPDIR: ${{ runner.temp }}
         run: |
           python3 tools/docs/check_docs.py
           python3 tools/docs/test_check_docs.py
           python3 tools/ci/test_verify_pure_core.py
+          python3 tools/preflight/test_preflight.py
       - name: Verify game-independent core with bounded CPU affinity
         env:
           TMPDIR: ${{ runner.temp }}
