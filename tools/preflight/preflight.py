@@ -20,12 +20,15 @@ GIT_SHA_RE = re.compile(r"^(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})$")
 PLATFORMS = {"windows", "linux-proton"}
 LAYERS = {"pure-core", "preflight-tool", "real-integration", "game-scenario"}
 STATUSES = {"PASS", "PRODUCT_FAIL", "ENVIRONMENT_INVALID", "UNCOVERED"}
-EXPECTED_SOURCE_PREFIXES = (
-    "tools/preflight/scenarios.json#",
-    "docs/",
-    "https://github.com/sagitrs/ps-mod-kourindou/issues/",
-    "https://github.com/sagitrs/ps-mod-kourindou/pull/",
-)
+CLOUD_VALUES = {"disabled", "off", "none"}
+ISOLATION_VALUES = {
+    "private-test-prefix",
+    "isolated",
+    "isolated-test-prefix",
+    "disposable-test-prefix",
+}
+ISSUE_PR_RE = re.compile(r"^https://github\.com/sagitrs/ps-mod-kourindou/(?:issues|pull)/\d+$")
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 class PreflightError(Exception):
@@ -336,6 +339,27 @@ def _record_sha(record: dict, key: str, errors: list[str]) -> str | None:
     return value.lower()
 
 
+def _expected_source_error(value: object, scenario_id: object) -> str | None:
+    if not isinstance(value, str) or not value.strip():
+        return "expectedSource must be a non-empty string"
+    if value.startswith("tools/preflight/scenarios.json#"):
+        fragment = value.split("#", 1)[1]
+        if fragment != scenario_id:
+            return "expectedSource scenario fragment must equal scenarioId"
+        return None
+    if value.startswith("docs/"):
+        relative = value.split("#", 1)[0]
+        rel = PurePosixPath(relative)
+        if rel.is_absolute() or any(part in ("", ".", "..") for part in rel.parts):
+            return "expectedSource docs path must stay inside the repository"
+        if not (REPO_ROOT / relative).is_file():
+            return f"expectedSource docs path does not exist: {relative}"
+        return None
+    if ISSUE_PR_RE.fullmatch(value):
+        return None
+    return "expectedSource must reference the scenario contract, a docs file, or an issue/PR with a number"
+
+
 def check_evidence(allowed_root_arg: str, record_path: Path, manifest_path: Path | None) -> dict:
     errors: list[str] = []
     checks: list[dict] = []
@@ -357,20 +381,23 @@ def check_evidence(allowed_root_arg: str, record_path: Path, manifest_path: Path
 
     scenarios_path = Path(__file__).with_name("scenarios.json")
     scenarios = _read_json(scenarios_path)
-    scenario_ids = {
-        item.get("id")
+    scenarios_by_id = {
+        item["id"]: item
         for item in scenarios.get("scenarios", [])
         if isinstance(item, dict) and isinstance(item.get("id"), str)
     }
+    scenario = None
+    scenario_id = None
     if layer in ("real-integration", "game-scenario"):
         scenario_id = record.get("scenarioId")
-        _check(
+        if _check(
             "scenario-id",
-            isinstance(scenario_id, str) and scenario_id in scenario_ids,
-            f"scenarioId must be one of {sorted(scenario_ids)}",
+            isinstance(scenario_id, str) and scenario_id in scenarios_by_id,
+            f"scenarioId must be one of {sorted(scenarios_by_id)}",
             errors,
             checks,
-        )
+        ):
+            scenario = scenarios_by_id[scenario_id]
 
     try:
         allowed_root = _safe_root(allowed_root_arg, "--allowed-root")
@@ -419,15 +446,30 @@ def check_evidence(allowed_root_arg: str, record_path: Path, manifest_path: Path
                 errors,
                 checks,
             )
-            _string_field(fixture.get("isolation"), "fixture.isolation", errors)
-            _string_field(fixture.get("cloud"), "fixture.cloud", errors)
+            isolation = fixture.get("isolation")
+            _check(
+                "fixture-isolation",
+                isinstance(isolation, str) and isolation in ISOLATION_VALUES,
+                f"fixture.isolation must be one of {sorted(ISOLATION_VALUES)}",
+                errors,
+                checks,
+            )
+            cloud = fixture.get("cloud")
+            _check(
+                "fixture-cloud",
+                isinstance(cloud, str) and cloud in CLOUD_VALUES,
+                f"fixture.cloud must be one of {sorted(CLOUD_VALUES)}",
+                errors,
+                checks,
+            )
 
         expected_source = _record_string(record, "expectedSource", errors)
         actual = _record_string(record, "actual", errors)
+        source_error = _expected_source_error(expected_source, scenario_id)
         _check(
             "expected-source-provenance",
-            isinstance(expected_source, str) and any(expected_source.startswith(prefix) for prefix in EXPECTED_SOURCE_PREFIXES),
-            "expectedSource must reference the scenario contract, docs, or an issue/PR",
+            source_error is None,
+            source_error or "expectedSource must reference the scenario contract, docs, or an issue/PR",
             errors,
             checks,
         )
@@ -440,24 +482,70 @@ def check_evidence(allowed_root_arg: str, record_path: Path, manifest_path: Path
         )
 
         steps = record.get("steps")
-        if not isinstance(steps, list) or not steps or not all(isinstance(step, str) and step.strip() for step in steps):
-            errors.append("steps must be a non-empty list of non-empty strings")
-            checks.append({"name": "steps", "ok": False})
-        else:
-            checks.append({"name": "steps", "ok": True})
+        steps_ok = (
+            isinstance(steps, list)
+            and bool(steps)
+            and all(isinstance(step, str) and step.strip() for step in steps)
+        )
+        _check("steps", steps_ok, "steps must be a non-empty list of non-empty strings", errors, checks)
+        if steps_ok and scenario is not None:
+            missing_steps = [step for step in scenario.get("steps", []) if step not in steps]
+            _check(
+                "scenario-steps",
+                not missing_steps,
+                f"steps missing contract entries: {missing_steps}",
+                errors,
+                checks,
+            )
 
-        evidence_paths = record.get("evidencePaths")
-        if not isinstance(evidence_paths, list) or not evidence_paths:
-            errors.append("evidencePaths must be a non-empty list")
-            checks.append({"name": "evidence-paths", "ok": False})
+        evidence = record.get("evidence")
+        if not isinstance(evidence, dict) or not evidence:
+            errors.append("evidence must be a non-empty object mapping required evidence labels to files")
+            checks.append({"name": "evidence", "ok": False})
         else:
-            for index, relative in enumerate(evidence_paths):
+            for label, entry in evidence.items():
+                if not isinstance(label, str) or not label.strip():
+                    errors.append("evidence keys must be non-empty strings")
+                    checks.append({"name": "evidence-key", "ok": False})
+                    continue
+                if not isinstance(entry, dict):
+                    errors.append(f"evidence[{label}] must be an object with path and sha256")
+                    checks.append({"name": f"evidence[{label}]", "ok": False})
+                    continue
                 try:
-                    _safe_join(allowed_root, relative, f"evidencePaths[{index}]", "file")
-                    checks.append({"name": f"evidencePaths[{index}]", "ok": True})
+                    target = _safe_join(allowed_root, entry.get("path"), f"evidence[{label}].path", "file")
+                    checks.append({"name": f"evidence[{label}].path", "ok": True})
                 except PreflightError as exc:
                     errors.append(str(exc))
-                    checks.append({"name": f"evidencePaths[{index}]", "ok": False})
+                    checks.append({"name": f"evidence[{label}].path", "ok": False})
+                    continue
+                expected = entry.get("sha256")
+                if not isinstance(expected, str) or not SHA256_RE.fullmatch(expected):
+                    errors.append(f"evidence[{label}].sha256 must be a 64-character hex digest")
+                    checks.append({"name": f"evidence[{label}].sha256", "ok": False})
+                    continue
+                actual = _sha256_file(target)
+                _check(
+                    f"evidence[{label}].digest",
+                    actual.lower() == expected.lower(),
+                    f"evidence[{label}] digest mismatch: expected {expected.lower()}, actual {actual}",
+                    errors,
+                    checks,
+                )
+
+            if scenario is not None:
+                missing_evidence = [
+                    label
+                    for label in scenario.get("requiredEvidence", [])
+                    if label not in evidence
+                ]
+                _check(
+                    "required-evidence",
+                    not missing_evidence,
+                    f"evidence missing required entries: {missing_evidence}",
+                    errors,
+                    checks,
+                )
 
         _record_string(record, "executor", errors)
 
