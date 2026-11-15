@@ -78,7 +78,11 @@ class PreflightTests(unittest.TestCase):
         scenario = self.scenario_contract("single-character-native-flow")
         observed_sha = sha256(self.observed.read_bytes())
         evidence = {
-            label: {"path": "evidence/observed.txt", "sha256": observed_sha}
+            label: {
+                "path": "evidence/observed.txt",
+                "sha256": observed_sha,
+                "role": scenario["evidenceRoles"][label][0],
+            }
             for label in scenario["requiredEvidence"]
         }
         return {
@@ -336,6 +340,46 @@ class PreflightTests(unittest.TestCase):
         self.assertFalse(payload["gamePass"])
         self.assertTrue(any("digest mismatch" in error for error in payload["errors"]))
 
+    def test_game_evidence_role_missing_is_rejected(self):
+        record = self.valid_record()
+        label = next(iter(record["evidence"]))
+        del record["evidence"][label]["role"]
+        record_path = self.write_record(record)
+        code, payload = self.run_cli("check-evidence", "--allowed-root", str(self.root), str(record_path))
+        self.assertEqual(code, 1, payload)
+        self.assertTrue(any("role must be one of" in error for error in payload["errors"]))
+
+    def test_game_evidence_candidate_package_role_is_rejected(self):
+        record = self.valid_record()
+        label = "native trade event observation"
+        record["evidence"][label]["role"] = "candidate-package"
+        record_path = self.write_record(record)
+        code, payload = self.run_cli("check-evidence", "--allowed-root", str(self.root), str(record_path))
+        self.assertEqual(code, 1, payload)
+        self.assertTrue(any("is not allowed for this scenario" in error for error in payload["errors"]))
+
+    def test_game_evidence_candidate_package_file_is_rejected(self):
+        record = self.valid_record()
+        label = "real scanner/load output"
+        record["evidence"][label] = {
+            "path": "candidate/package.zip",
+            "sha256": sha256(self.candidate.read_bytes()),
+            "role": "log",
+        }
+        record_path = self.write_record(record)
+        code, payload = self.run_cli("check-evidence", "--allowed-root", str(self.root), str(record_path))
+        self.assertEqual(code, 1, payload)
+        self.assertTrue(any("candidate package itself" in error for error in payload["errors"]))
+
+    def test_game_evidence_role_mismatch_is_rejected(self):
+        record = self.valid_record()
+        label = "native trade event observation"
+        record["evidence"][label]["role"] = "screenshot"
+        record_path = self.write_record(record)
+        code, payload = self.run_cli("check-evidence", "--allowed-root", str(self.root), str(record_path))
+        self.assertEqual(code, 1, payload)
+        self.assertTrue(any("is not allowed for this scenario" in error for error in payload["errors"]))
+
     def test_uncovered_record_is_valid_but_not_game_pass(self):
         record = {
             "schemaVersion": 1,
@@ -439,6 +483,12 @@ class PreflightTests(unittest.TestCase):
         joined = " ".join(flow["notAsserted"])
         for decision in ("D02", "D03", "D06", "D08"):
             self.assertIn(decision, joined)
+        for scenario in by_id.values():
+            labels = set(scenario["requiredEvidence"])
+            roles = scenario.get("evidenceRoles", {})
+            self.assertEqual(set(roles), labels)
+            for allowed in roles.values():
+                self.assertNotIn("candidate-package", allowed)
 
 
 if __name__ == "__main__":

@@ -18,6 +18,12 @@
         "settings open/return observation",
         "test save/Cloud isolation declaration"
       ],
+      "evidenceRoles": {
+        "game build and platform/Proton binding": ["metadata", "log"],
+        "process-external observation of main menu": ["screenshot", "video"],
+        "settings open/return observation": ["screenshot", "video"],
+        "test save/Cloud isolation declaration": ["metadata", "log"]
+      },
       "notAsserted": [
         "Mod loading",
         "character identity",
@@ -47,6 +53,14 @@
         "two-slot isolation observation",
         "vanilla load after disabling the Mod"
       ],
+      "evidenceRoles": {
+        "real scanner/load output": ["scanner-output", "log"],
+        "independent character identity diagnostic": ["identity-diagnostic", "log"],
+        "native trade event observation": ["event-trace", "log"],
+        "save and restart observation": ["save-artifact", "log"],
+        "two-slot isolation observation": ["save-artifact", "log"],
+        "vanilla load after disabling the Mod": ["screenshot", "video", "log"]
+      },
       "notAsserted": [
         "D02 affection growth values",
         "D03 night-help effects or prices",
