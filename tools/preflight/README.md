@@ -55,12 +55,18 @@ python3 tools/preflight/test_preflight.py
 
 记录分层：`pure-core`、`preflight-tool`、`real-integration`、`game-scenario`。状态：`PASS`、`PRODUCT_FAIL`、`ENVIRONMENT_INVALID`、`UNCOVERED`。
 
-`game-scenario`/`real-integration` 的 `PASS` 必须包含源码 SHA、候选包 SHA-256、游戏 build、平台/Proton、夹具 ID/摘要/隔离/Cloud、`expectedSource`、步骤、实际结果、证据路径和执行者。`expectedSource` 必须指向场景合同、`docs/` 或本仓 Issue/PR，且不能等于 `actual`；工具拒绝把实际结果复制成预期。
+`game-scenario`/`real-integration` 的 `PASS` 必须包含源码 SHA、候选包 SHA-256、游戏 build、平台/Proton、夹具 ID/摘要/隔离/Cloud、`expectedSource`、步骤、实际结果、`evidence` 映射和执行者。
+
+- `fixture.cloud` 只接受 `disabled`/`off`/`none`；`fixture.isolation` 只接受 `private-test-prefix`/`isolated`/`isolated-test-prefix`/`disposable-test-prefix`。`cloud="enabled"` 或 `isolation="shared-host"` 会得到 `ENVIRONMENT_INVALID`，不会 `gamePass:true`。
+- `steps` 必须覆盖 [scenarios.json](scenarios.json) 中对应场景的全部步骤；`evidence` 必须为每条 `requiredEvidence` 提供 `{path, sha256}`，路径在 `--allowed-root` 内且摘要匹配。
+- `expectedSource` 必须指向场景合同的对应 ID、真实存在的 `docs/` 文件，或带数字编号的本仓 Issue/PR；不能等于 `actual`，也不能用不存在的文档或空编号冒充来源。
 
 场景合同见 [scenarios.json](scenarios.json)：
 
 - `vanilla-smoke`：原版无 Mod 主菜单→设置打开→返回，不改设置、不加载日常档。
 - `single-character-native-flow`：单角色原生事件→保存→跨进程→两槽隔离→禁用后原版读档；D02/D03/D06/D08 未定的玩法断言不在本合同中。
+
+`_safe_join()` 的检查与读取之间仍有 TOCTOU 窗口，当前威胁模型是“操作者独占且检查期间不可变的只读输入根”。如果要在共享 runner 上运行，需改为逐段 `O_NOFOLLOW` 打开或补充等价的隔离措施。
 
 ## 边界
 

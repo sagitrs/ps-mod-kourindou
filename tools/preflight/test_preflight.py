@@ -70,7 +70,17 @@ class PreflightTests(unittest.TestCase):
             },
         }
 
+    def scenario_contract(self, scenario_id: str) -> dict:
+        scenarios = json.loads(SCENARIOS.read_text(encoding="utf-8"))
+        return next(item for item in scenarios["scenarios"] if item["id"] == scenario_id)
+
     def valid_record(self) -> dict:
+        scenario = self.scenario_contract("single-character-native-flow")
+        observed_sha = sha256(self.observed.read_bytes())
+        evidence = {
+            label: {"path": "evidence/observed.txt", "sha256": observed_sha}
+            for label in scenario["requiredEvidence"]
+        }
         return {
             "schemaVersion": 1,
             "scenarioId": "single-character-native-flow",
@@ -88,9 +98,9 @@ class PreflightTests(unittest.TestCase):
                 "cloud": "disabled",
             },
             "expectedSource": "tools/preflight/scenarios.json#single-character-native-flow",
-            "steps": ["launch", "native event", "save", "restart", "disable", "vanilla load"],
+            "steps": list(scenario["steps"]),
             "actual": "observed native event, save, restart and second-slot isolation",
-            "evidencePaths": ["evidence/observed.txt"],
+            "evidence": evidence,
             "executor": "synthetic-test",
         }
 
@@ -206,6 +216,14 @@ class PreflightTests(unittest.TestCase):
         self.assertTrue(any("cloudSyncDisabled" in error for error in payload["errors"]))
         self.assertTrue(any("dailySaveUsed" in error for error in payload["errors"]))
 
+    def test_test_save_isolated_copy_false_is_rejected(self):
+        manifest = self.valid_manifest()
+        manifest["testSave"]["isolatedCopy"] = False
+        self.write_json(self.manifest_path, manifest)
+        code, payload = self.check_inputs()
+        self.assertEqual(code, 1, payload)
+        self.assertTrue(any("isolatedCopy" in error for error in payload["errors"]))
+
     def test_input_root_must_match_allowed_root(self):
         other = self.base / "other-inputs"
         other.mkdir()
@@ -254,6 +272,69 @@ class PreflightTests(unittest.TestCase):
         code, payload = self.run_cli("check-evidence", "--allowed-root", str(self.root), str(record_path))
         self.assertEqual(code, 1, payload)
         self.assertFalse(payload["gamePass"])
+
+    def test_game_evidence_cloud_enabled_is_rejected(self):
+        record = self.valid_record()
+        record["fixture"]["cloud"] = "enabled"
+        record_path = self.write_record(record)
+        code, payload = self.run_cli("check-evidence", "--allowed-root", str(self.root), str(record_path))
+        self.assertEqual(code, 1, payload)
+        self.assertFalse(payload["gamePass"])
+        self.assertTrue(any("fixture.cloud" in error for error in payload["errors"]))
+
+    def test_game_evidence_shared_isolation_is_rejected(self):
+        record = self.valid_record()
+        record["fixture"]["isolation"] = "shared-host"
+        record_path = self.write_record(record)
+        code, payload = self.run_cli("check-evidence", "--allowed-root", str(self.root), str(record_path))
+        self.assertEqual(code, 1, payload)
+        self.assertFalse(payload["gamePass"])
+        self.assertTrue(any("fixture.isolation" in error for error in payload["errors"]))
+
+    def test_game_evidence_steps_must_cover_contract(self):
+        record = self.valid_record()
+        record["steps"] = ["x"]
+        record_path = self.write_record(record)
+        code, payload = self.run_cli("check-evidence", "--allowed-root", str(self.root), str(record_path))
+        self.assertEqual(code, 1, payload)
+        self.assertFalse(payload["gamePass"])
+        self.assertTrue(any("missing contract entries" in error for error in payload["errors"]))
+
+    def test_game_evidence_empty_steps_is_rejected(self):
+        record = self.valid_record()
+        record["steps"] = []
+        record_path = self.write_record(record)
+        code, payload = self.run_cli("check-evidence", "--allowed-root", str(self.root), str(record_path))
+        self.assertEqual(code, 1, payload)
+        self.assertTrue(any("steps must be a non-empty list" in error for error in payload["errors"]))
+
+    def test_game_evidence_empty_evidence_is_rejected(self):
+        record = self.valid_record()
+        record["evidence"] = {}
+        record_path = self.write_record(record)
+        code, payload = self.run_cli("check-evidence", "--allowed-root", str(self.root), str(record_path))
+        self.assertEqual(code, 1, payload)
+        self.assertTrue(any("evidence must be a non-empty object" in error for error in payload["errors"]))
+
+    def test_game_evidence_requires_required_evidence_keys(self):
+        record = self.valid_record()
+        first_label = next(iter(record["evidence"]))
+        del record["evidence"][first_label]
+        record_path = self.write_record(record)
+        code, payload = self.run_cli("check-evidence", "--allowed-root", str(self.root), str(record_path))
+        self.assertEqual(code, 1, payload)
+        self.assertFalse(payload["gamePass"])
+        self.assertTrue(any("missing required entries" in error for error in payload["errors"]))
+
+    def test_game_evidence_evidence_digest_mismatch_is_rejected(self):
+        record = self.valid_record()
+        first_label = next(iter(record["evidence"]))
+        record["evidence"][first_label]["sha256"] = "0" * 64
+        record_path = self.write_record(record)
+        code, payload = self.run_cli("check-evidence", "--allowed-root", str(self.root), str(record_path))
+        self.assertEqual(code, 1, payload)
+        self.assertFalse(payload["gamePass"])
+        self.assertTrue(any("digest mismatch" in error for error in payload["errors"]))
 
     def test_uncovered_record_is_valid_but_not_game_pass(self):
         record = {
@@ -315,9 +396,34 @@ class PreflightTests(unittest.TestCase):
         self.assertEqual(code, 1, payload)
         self.assertTrue(any("expectedSource" in error for error in payload["errors"]))
 
+    def test_expected_source_docs_missing_is_rejected(self):
+        record = self.valid_record()
+        record["expectedSource"] = "docs/does-not-exist.md"
+        record_path = self.write_record(record)
+        code, payload = self.run_cli("check-evidence", "--allowed-root", str(self.root), str(record_path))
+        self.assertEqual(code, 1, payload)
+        self.assertTrue(any("does not exist" in error for error in payload["errors"]))
+
+    def test_expected_source_issue_without_number_is_rejected(self):
+        record = self.valid_record()
+        record["expectedSource"] = "https://github.com/sagitrs/ps-mod-kourindou/issues/"
+        record_path = self.write_record(record)
+        code, payload = self.run_cli("check-evidence", "--allowed-root", str(self.root), str(record_path))
+        self.assertEqual(code, 1, payload)
+        self.assertTrue(any("expectedSource" in error for error in payload["errors"]))
+
+    def test_expected_source_scenario_fragment_mismatch_is_rejected(self):
+        record = self.valid_record()
+        record["expectedSource"] = "tools/preflight/scenarios.json#vanilla-smoke"
+        record_path = self.write_record(record)
+        code, payload = self.run_cli("check-evidence", "--allowed-root", str(self.root), str(record_path))
+        self.assertEqual(code, 1, payload)
+        self.assertTrue(any("scenario fragment" in error for error in payload["errors"]))
+
     def test_evidence_path_escape_is_rejected(self):
         record = self.valid_record()
-        record["evidencePaths"] = ["../outside.txt"]
+        first_label = next(iter(record["evidence"]))
+        record["evidence"][first_label]["path"] = "../outside.txt"
         record_path = self.write_record(record)
         code, payload = self.run_cli("check-evidence", "--allowed-root", str(self.root), str(record_path))
         self.assertEqual(code, 1, payload)
