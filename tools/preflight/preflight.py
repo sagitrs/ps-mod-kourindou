@@ -27,6 +27,17 @@ ISOLATION_VALUES = {
     "isolated-test-prefix",
     "disposable-test-prefix",
 }
+EVIDENCE_ROLES = {
+    "candidate-package",
+    "scanner-output",
+    "log",
+    "screenshot",
+    "video",
+    "event-trace",
+    "save-artifact",
+    "identity-diagnostic",
+    "metadata",
+}
 ISSUE_PR_RE = re.compile(r"^https://github\.com/sagitrs/ps-mod-kourindou/(?:issues|pull)/\d+$")
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -512,6 +523,12 @@ def check_evidence(allowed_root_arg: str, record_path: Path, manifest_path: Path
                     errors.append(f"evidence[{label}] must be an object with path and sha256")
                     checks.append({"name": f"evidence[{label}]", "ok": False})
                     continue
+                role = entry.get("role")
+                if not isinstance(role, str) or role not in EVIDENCE_ROLES:
+                    errors.append(f"evidence[{label}].role must be one of {sorted(EVIDENCE_ROLES)}")
+                    checks.append({"name": f"evidence[{label}].role", "ok": False})
+                else:
+                    checks.append({"name": f"evidence[{label}].role", "ok": True})
                 try:
                     target = _safe_join(allowed_root, entry.get("path"), f"evidence[{label}].path", "file")
                     checks.append({"name": f"evidence[{label}].path", "ok": True})
@@ -532,6 +549,13 @@ def check_evidence(allowed_root_arg: str, record_path: Path, manifest_path: Path
                     errors,
                     checks,
                 )
+                _check(
+                    f"evidence[{label}].not-candidate-package",
+                    candidate_sha is None or actual.lower() != candidate_sha,
+                    f"evidence[{label}] must not be the candidate package itself",
+                    errors,
+                    checks,
+                )
 
             if scenario is not None:
                 missing_evidence = [
@@ -546,6 +570,28 @@ def check_evidence(allowed_root_arg: str, record_path: Path, manifest_path: Path
                     errors,
                     checks,
                 )
+                roles_by_label = scenario.get("evidenceRoles", {})
+                for label in scenario.get("requiredEvidence", []):
+                    entry = evidence.get(label)
+                    if not isinstance(entry, dict):
+                        continue
+                    role = entry.get("role")
+                    if not isinstance(role, str) or role not in EVIDENCE_ROLES:
+                        continue
+                    allowed = roles_by_label.get(label)
+                    if allowed is None:
+                        allowed = sorted(EVIDENCE_ROLES - {"candidate-package"})
+                    if not isinstance(allowed, list) or not all(isinstance(item, str) for item in allowed):
+                        errors.append(f"scenario evidenceRoles for {label!r} must be a list of strings")
+                        checks.append({"name": f"required-evidence-role[{label}]", "ok": False})
+                        continue
+                    _check(
+                        f"required-evidence-role[{label}]",
+                        role in allowed,
+                        f"evidence[{label}].role {role!r} is not allowed for this scenario; expected one of {allowed}",
+                        errors,
+                        checks,
+                    )
 
         _record_string(record, "executor", errors)
 

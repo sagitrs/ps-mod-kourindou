@@ -58,7 +58,9 @@ python3 tools/preflight/test_preflight.py
 `game-scenario`/`real-integration` 的 `PASS` 必须包含源码 SHA、候选包 SHA-256、游戏 build、平台/Proton、夹具 ID/摘要/隔离/Cloud、`expectedSource`、步骤、实际结果、`evidence` 映射和执行者。
 
 - `fixture.cloud` 只接受 `disabled`/`off`/`none`；`fixture.isolation` 只接受 `private-test-prefix`/`isolated`/`isolated-test-prefix`/`disposable-test-prefix`。`cloud="enabled"` 或 `isolation="shared-host"` 会得到 `ENVIRONMENT_INVALID`，不会 `gamePass:true`。
-- `steps` 必须覆盖 [scenarios.json](scenarios.json) 中对应场景的全部步骤；`evidence` 必须为每条 `requiredEvidence` 提供 `{path, sha256}`，路径在 `--allowed-root` 内且摘要匹配。
+- `steps` 必须覆盖 [scenarios.json](scenarios.json) 中对应场景的全部步骤；`evidence` 必须为每条 `requiredEvidence` 提供 `{path, sha256, role}`，路径在 `--allowed-root` 内且摘要匹配。
+- `role` 只接受 `candidate-package`/`scanner-output`/`log`/`screenshot`/`video`/`event-trace`/`save-artifact`/`identity-diagnostic`/`metadata`；场景 `evidenceRoles` 限定每条 `requiredEvidence` 可接受的角色。候选包本身不能作为主菜单、原生事件或保存证据；同源多帧/多标签可以复用文件，但角色必须符合场景合同。
+- 上述是结构和角色约束，不证明文件内容语义；仍需人工/真实执行复核，结构有效不等于游戏 PASS。
 - `expectedSource` 必须指向场景合同的对应 ID、真实存在的 `docs/` 文件，或带数字编号的本仓 Issue/PR；不能等于 `actual`，也不能用不存在的文档或空编号冒充来源。
 
 场景合同见 [scenarios.json](scenarios.json)：
