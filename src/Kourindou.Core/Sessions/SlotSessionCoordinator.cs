@@ -34,8 +34,10 @@ public sealed class SlotSessionCoordinator : IDisposable
     private SlotSessionStatus _status = SlotSessionStatus.NoSession;
     private long _generation;
     private bool _saving;
-    private bool _transitioning;
+    private int _transitionDepth;
     private bool _disposed;
+
+    private bool IsTransitioning => _transitionDepth > 0;
 
     public SlotSessionCoordinator(
         ISlotStateStore store,
@@ -94,7 +96,7 @@ public sealed class SlotSessionCoordinator : IDisposable
             return SessionOperationResult.Failure(SessionCodes.SessionDisabled);
         }
 
-        if (_transitioning)
+        if (IsTransitioning)
         {
             return SessionOperationResult.Failure(SessionCodes.TransitionInProgress);
         }
@@ -116,8 +118,10 @@ public sealed class SlotSessionCoordinator : IDisposable
             RunTransition(ReleaseSession);
         }
 
-        StartSession(slotId);
-        return SessionOperationResult.Success(switched ? SessionCodes.Switched : SessionCodes.Entered);
+        var started = StartSession(slotId);
+        return started
+            ? SessionOperationResult.Success(switched ? SessionCodes.Switched : SessionCodes.Entered)
+            : SessionOperationResult.Failure(SessionCodes.SessionStartSuperseded);
     }
 
     /// <summary>
@@ -258,6 +262,13 @@ public sealed class SlotSessionCoordinator : IDisposable
     /// ignored within the session and the remembered-id window is bounded; when
     /// full, further events are rejected instead of growing memory without limit.
     /// </summary>
+    /// <remarks>
+    /// An event id is remembered before its handler runs, so a handler exception
+    /// consumes that id and a retry is reported as <c>duplicate_event</c>. This
+    /// is intentional at-most-once processing within the session. Remembered ids
+    /// survive a successful <see cref="Load"/> in the same session and are only
+    /// cleared when the session ends (exit, slot switch or disable).
+    /// </remarks>
     public SessionEventDispatchResult ProcessEvent(SessionEvent sessionEvent)
     {
         ArgumentNullException.ThrowIfNull(sessionEvent);
@@ -317,6 +328,11 @@ public sealed class SlotSessionCoordinator : IDisposable
             return SessionOperationResult.Failure(SessionCodes.SessionDisabled);
         }
 
+        if (IsTransitioning)
+        {
+            return SessionOperationResult.Failure(SessionCodes.TransitionInProgress);
+        }
+
         if (_status != SlotSessionStatus.Active)
         {
             return SessionOperationResult.Success(SessionCodes.AlreadyExited);
@@ -356,9 +372,15 @@ public sealed class SlotSessionCoordinator : IDisposable
         _disposed = true;
     }
 
-    private void StartSession(string slotId)
+    private bool StartSession(string slotId)
     {
+        if (_disposed || _status == SlotSessionStatus.Disabled)
+        {
+            return false;
+        }
+
         _generation++;
+        var generation = _generation;
         _status = SlotSessionStatus.Active;
         _slotId = slotId;
         _state = null;
@@ -367,19 +389,40 @@ public sealed class SlotSessionCoordinator : IDisposable
 
         if (_eventPort is null)
         {
-            return;
+            return true;
         }
 
-        var generation = _generation;
+        IDisposable? subscription = null;
         try
         {
-            _eventSubscription = _eventPort.Subscribe(sessionEvent => OnPortEvent(generation, sessionEvent));
+            // A port may invoke the handler synchronously before returning its
+            // handle. Keep the transition guard active so callbacks cannot
+            // start/end another session and overwrite the handle being created.
+            RunTransition(() =>
+            {
+                subscription = _eventPort.Subscribe(
+                    sessionEvent => OnPortEvent(generation, sessionEvent));
+            });
         }
         catch
         {
             RunTransition(ReleaseSession);
             throw;
         }
+
+        // Defense in depth for a port that still changes lifecycle state while
+        // the guard is active (for example by calling Disable). Never retain a
+        // handle that does not belong to the current generation.
+        if (_status != SlotSessionStatus.Active
+            || _generation != generation
+            || _eventSubscription is not null)
+        {
+            subscription?.Dispose();
+            return false;
+        }
+
+        _eventSubscription = subscription;
+        return true;
     }
 
     private void ReleaseSession()
@@ -426,14 +469,14 @@ public sealed class SlotSessionCoordinator : IDisposable
 
     private void RunTransition(Action transition)
     {
-        _transitioning = true;
+        _transitionDepth++;
         try
         {
             transition();
         }
         finally
         {
-            _transitioning = false;
+            _transitionDepth--;
         }
     }
 

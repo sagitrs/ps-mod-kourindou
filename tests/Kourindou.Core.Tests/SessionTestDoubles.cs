@@ -38,10 +38,20 @@ internal sealed class RecordingSessionEventPort : ISessionEventPort
 {
     public List<Registration> Registrations { get; } = [];
 
+    /// <summary>
+    /// One-shot action invoked synchronously from <see cref="Subscribe"/> before
+    /// the handle is returned. Used to exercise reentrant synchronous delivery.
+    /// </summary>
+    public Action? OnSubscribe { get; set; }
+
     public int ActiveSubscriptionCount => Registrations.Count(registration => !registration.IsDisposed);
 
     public IDisposable Subscribe(Action<SessionEvent> handler)
     {
+        var onSubscribe = OnSubscribe;
+        OnSubscribe = null;
+        onSubscribe?.Invoke();
+
         var registration = new Registration(handler);
         Registrations.Add(registration);
         return registration;

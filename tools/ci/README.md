@@ -21,7 +21,7 @@ python3 tools/ci/test_verify_pure_core.py
 ## 已启用真实 CI
 
 - **唯一维护入口**：`.github/workflows/pure-core.yml`。
-- 工作流依次运行 `tools/docs/check_docs.py`、`tools/docs/test_check_docs.py`、`tools/ci/test_verify_pure_core.py`（14 项守卫自测），再运行 `tools/ci/verify-pure-core.sh`（63 项核心测试 + 新鲜 TRX 执行守卫）。
+- 工作流依次运行 `tools/docs/check_docs.py`、`tools/docs/test_check_docs.py`、`tools/ci/test_verify_pure_core.py`（14 项守卫自测），再运行 `tools/ci/verify-pure-core.sh`（68 项核心测试 + 新鲜 TRX 执行守卫）。
 - 固定 `ubuntu-24.04`、SDK `10.0.404`、actions 完整提交 SHA、`timeout-minutes: 10`、`contents: read`；使用实际可用 CPU 中的 2 核与 2 GiB .NET GC 上限。
 - 实例：PR17 整合头 `05a758aa2f1ff2788807ae785087ebdae0035ab9`，[push run 43166113417](https://github.com/sagitrs/ps-mod-kourindou/actions/runs/43166113417) 与 [PR run 43166118863](https://github.com/sagitrs/ps-mod-kourindou/actions/runs/43166118863) 均 success。
 - 该 CI 只覆盖游戏无关核心/文档/守卫自测；**不运行游戏、不操作真实存档、不覆盖 AC01—AC20**。不能把 CI 绿写成游戏或产品验收通过。
