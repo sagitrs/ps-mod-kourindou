@@ -162,6 +162,78 @@ public sealed class SlotSessionCoordinatorTests
     }
 
     [Fact]
+    public void SynchronousSubscribeCallback_EnterSlotReentrancyIsRejectedAndLeavesOneSubscription()
+    {
+        var events = new RecordingSessionEventPort();
+        using var coordinator = new SlotSessionCoordinator(new RecordingSlotStateStore(), events);
+
+        SessionOperationResult? reentrantEnter = null;
+        events.OnSubscribe = () => reentrantEnter = coordinator.EnterSlot("slot-b");
+
+        var entered = coordinator.EnterSlot("slot-a");
+
+        Assert.True(entered.Succeeded);
+        Assert.Equal(SessionCodes.Entered, entered.Code);
+        Assert.NotNull(reentrantEnter);
+        Assert.False(reentrantEnter.Succeeded);
+        Assert.Equal(SessionCodes.TransitionInProgress, reentrantEnter.Code);
+        Assert.Equal(SlotSessionStatus.Active, coordinator.Status);
+        Assert.Equal("slot-a", coordinator.ActiveSlotId);
+        Assert.Equal(1, events.ActiveSubscriptionCount);
+        Assert.Single(events.Registrations);
+
+        Assert.True(coordinator.Exit().Succeeded);
+        Assert.Equal(0, events.ActiveSubscriptionCount);
+    }
+
+    [Fact]
+    public void SynchronousSubscribeCallback_ExitReentrancyIsRejectedAndLeavesOneSubscription()
+    {
+        var events = new RecordingSessionEventPort();
+        using var coordinator = new SlotSessionCoordinator(new RecordingSlotStateStore(), events);
+
+        SessionOperationResult? reentrantExit = null;
+        events.OnSubscribe = () => reentrantExit = coordinator.Exit();
+
+        var entered = coordinator.EnterSlot("slot-a");
+
+        Assert.True(entered.Succeeded);
+        Assert.Equal(SessionCodes.Entered, entered.Code);
+        Assert.NotNull(reentrantExit);
+        Assert.False(reentrantExit.Succeeded);
+        Assert.Equal(SessionCodes.TransitionInProgress, reentrantExit.Code);
+        Assert.Equal(SlotSessionStatus.Active, coordinator.Status);
+        Assert.Equal("slot-a", coordinator.ActiveSlotId);
+        Assert.Equal(1, events.ActiveSubscriptionCount);
+        Assert.Single(events.Registrations);
+
+        Assert.True(coordinator.Exit().Succeeded);
+        Assert.Equal(0, events.ActiveSubscriptionCount);
+    }
+
+    [Fact]
+    public void SynchronousSubscribeCallback_DisableSupersedesStartAndReleasesReturnedHandle()
+    {
+        var events = new RecordingSessionEventPort();
+        using var coordinator = new SlotSessionCoordinator(new RecordingSlotStateStore(), events);
+
+        SessionOperationResult? reentrantDisable = null;
+        events.OnSubscribe = () => reentrantDisable = coordinator.Disable();
+
+        var entered = coordinator.EnterSlot("slot-a");
+
+        Assert.False(entered.Succeeded);
+        Assert.Equal(SessionCodes.SessionStartSuperseded, entered.Code);
+        Assert.NotNull(reentrantDisable);
+        Assert.True(reentrantDisable.Succeeded);
+        Assert.Equal(SessionCodes.Disabled, reentrantDisable.Code);
+        Assert.Equal(SlotSessionStatus.Disabled, coordinator.Status);
+        Assert.Null(coordinator.ActiveSlotId);
+        Assert.Equal(0, events.ActiveSubscriptionCount);
+        Assert.Single(events.Registrations);
+    }
+
+    [Fact]
     public void OldHandlerHandle_AfterSwitch_CannotRemoveNewSessionsHandler()
     {
         var events = new RecordingSessionEventPort();
@@ -642,6 +714,51 @@ public sealed class SlotSessionCoordinatorTests
         Assert.False(duplicate.Processed);
         Assert.Equal(SessionCodes.DuplicateEvent, duplicate.Code);
         Assert.True(different.Processed);
+        Assert.Equal(2, handled);
+    }
+
+    [Fact]
+    public void HandlerException_ConsumesEventIdForAtMostOnceProcessing()
+    {
+        using var coordinator = new SlotSessionCoordinator(new RecordingSlotStateStore());
+        coordinator.EnterSlot("slot-a");
+        var handled = 0;
+        Assert.True(coordinator.RegisterEventHandler("boom", _ =>
+        {
+            handled++;
+            throw new InvalidOperationException("handler failure");
+        }).Registered);
+
+        Assert.Throws<InvalidOperationException>(
+            () => coordinator.ProcessEvent(new SessionEvent("boom", "event-1")));
+        var retry = coordinator.ProcessEvent(new SessionEvent("boom", "event-1"));
+
+        Assert.False(retry.Processed);
+        Assert.Equal(SessionCodes.DuplicateEvent, retry.Code);
+        Assert.Equal(1, handled);
+    }
+
+    [Fact]
+    public void RememberedEventIds_AreSessionScopedAndSurviveReload()
+    {
+        using var coordinator = new SlotSessionCoordinator(new RecordingSlotStateStore());
+        coordinator.EnterSlot("slot-a");
+        var handled = 0;
+        Assert.True(coordinator.RegisterEventHandler("tick", _ => handled++).Registered);
+        Assert.True(coordinator.ProcessEvent(new SessionEvent("tick", "event-1")).Processed);
+        Assert.Equal(1, handled);
+
+        Assert.True(coordinator.Load("slot-a", Raw("slot-a", """{"alice":{"progress":1}}""")).IsUsable);
+        var afterLoad = coordinator.ProcessEvent(new SessionEvent("tick", "event-1"));
+
+        Assert.False(afterLoad.Processed);
+        Assert.Equal(SessionCodes.DuplicateEvent, afterLoad.Code);
+        Assert.Equal(1, handled);
+
+        Assert.True(coordinator.Exit().Succeeded);
+        Assert.True(coordinator.EnterSlot("slot-a").Succeeded);
+        Assert.True(coordinator.RegisterEventHandler("tick", _ => handled++).Registered);
+        Assert.True(coordinator.ProcessEvent(new SessionEvent("tick", "event-1")).Processed);
         Assert.Equal(2, handled);
     }
 

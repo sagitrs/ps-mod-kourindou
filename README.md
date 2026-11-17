@@ -52,7 +52,7 @@ dotnet build Kourindou.sln
 dotnet test Kourindou.sln
 ```
 
-真实 CI 入口为 `.github/workflows/pure-core.yml`；它运行文档检查/自测、14 项 CI 守卫自测和 63 项纯核心测试，但只证明游戏无关核心，不证明游戏内行为。
+真实 CI 入口为 `.github/workflows/pure-core.yml`；它运行文档检查/自测、14 项 CI 守卫自测和 68 项纯核心测试，但只证明游戏无关核心，不证明游戏内行为。
 
 游戏真实适配仍由后续任务在合法固定构建、程序集引用和测试客户端到位后执行。
 

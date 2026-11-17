@@ -15,6 +15,7 @@ public static class SessionCodes
     public const string AlreadyDisabled = "already_disabled";
     public const string InvalidSlotId = "invalid_slot_id";
     public const string TransitionInProgress = "transition_in_progress";
+    public const string SessionStartSuperseded = "session_start_superseded";
     public const string SessionRequired = "session_required";
     public const string SessionDisabled = "session_disabled";
     public const string SessionSlotMismatch = "session_slot_mismatch";
